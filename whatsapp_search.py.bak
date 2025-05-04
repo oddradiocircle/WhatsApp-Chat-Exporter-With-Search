@@ -1,0 +1,516 @@
+#!/usr/bin/env python3
+"""
+WhatsApp Chat Search Tool
+
+This script searches through WhatsApp chat data exported by WhatsApp-Chat-Exporter
+to find conversations containing specific keywords and calculates relevance scores.
+"""
+
+import json
+import argparse
+import re
+import os
+from datetime import datetime
+from collections import Counter
+import sys
+import time
+
+def load_json_data(file_path):
+    """
+    Load the WhatsApp chat data from a JSON file.
+    Uses a streaming approach to handle large files efficiently.
+    """
+    print(f"Loading data from {file_path}...")
+    start_time = time.time()
+
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+
+        elapsed = time.time() - start_time
+        print(f"Data loaded successfully in {elapsed:.2f} seconds.")
+        print(f"Found {len(data)} chats.")
+        return data
+    except json.JSONDecodeError as e:
+        print(f"Error decoding JSON: {e}")
+        sys.exit(1)
+    except FileNotFoundError:
+        print(f"File not found: {file_path}")
+        sys.exit(1)
+    except Exception as e:
+        print(f"Error loading file: {e}")
+        sys.exit(1)
+
+def calculate_relevance_score(message, keywords, context_size=3):
+    """
+    Calculate a relevance score for a message based on keywords.
+
+    Parameters:
+    - message: The message text
+    - keywords: List of keywords to search for
+    - context_size: Number of words around the keyword to consider for context
+
+    Returns:
+    - score: A relevance score (0-100)
+    - matched_keywords: List of keywords that matched
+    """
+    if not message or not isinstance(message, str):
+        return 0, []
+
+    # Convert message to lowercase for case-insensitive matching
+    message_lower = message.lower()
+
+    # Count occurrences of each keyword
+    matched_keywords = []
+    keyword_count = 0
+
+    for keyword in keywords:
+        keyword_lower = keyword.lower()
+        count = message_lower.count(keyword_lower)
+        if count > 0:
+            matched_keywords.append(keyword)
+            keyword_count += count
+
+    if keyword_count == 0:
+        return 0, []
+
+    # Calculate base score based on keyword frequency
+    base_score = min(100, keyword_count * 20)
+
+    # Adjust score based on message length (shorter messages with keywords are more relevant)
+    length_factor = 1.0
+    if len(message) > 0:
+        length_factor = min(1.0, 50 / len(message))
+
+    # Calculate final score
+    score = base_score * length_factor
+
+    return score, matched_keywords
+
+def format_phone_number(phone):
+    """
+    Format a phone number to make it more readable.
+
+    Parameters:
+    - phone: The phone number string
+
+    Returns:
+    - formatted: A more readable phone number
+    """
+    if not phone or not isinstance(phone, str):
+        return "Unknown"
+
+    # If it's already a name (contains letters), return as is
+    if any(c.isalpha() for c in phone):
+        return phone
+
+    # Clean the phone number
+    digits = ''.join(c for c in phone if c.isdigit())
+
+    # Format based on length
+    if len(digits) <= 4:
+        return phone  # Too short, return as is
+    elif len(digits) <= 7:
+        return f"{digits[:3]}-{digits[3:]}"  # Local number
+    elif len(digits) <= 10:
+        return f"({digits[:3]}) {digits[3:6]}-{digits[6:]}"  # National number
+    else:
+        # International number
+        country_code = digits[:-10]
+        area_code = digits[-10:-7]
+        prefix = digits[-7:-4]
+        line = digits[-4:]
+        return f"+{country_code} ({area_code}) {prefix}-{line}"
+
+def get_contact_info(data, chat_id, sender_id=None):
+    """
+    Get contact information for a chat or sender.
+
+    Parameters:
+    - data: The WhatsApp chat data
+    - chat_id: ID of the chat
+    - sender_id: Optional ID of the sender
+
+    Returns:
+    - contact_info: Dictionary with contact information
+    """
+    contact_info = {
+        'name': None,
+        'display_name': None,
+        'phone': None
+    }
+
+    try:
+        # Get chat contact info
+        chat_data = data.get(chat_id, {})
+        contact = chat_data.get('contact', {})
+
+        if contact:
+            contact_info['name'] = contact.get('name')
+            contact_info['display_name'] = contact.get('display_name')
+            contact_info['phone'] = contact.get('phone')
+
+        # If no contact info found, use chat name
+        if not contact_info['name'] and not contact_info['display_name']:
+            contact_info['name'] = chat_data.get('name')
+
+        # If sender_id is provided, try to get sender contact info
+        if sender_id and sender_id != chat_id:
+            # Try to find sender in participants (for group chats)
+            participants = chat_data.get('participants', [])
+            for participant in participants:
+                if participant.get('id') == sender_id:
+                    contact_info['name'] = participant.get('name')
+                    contact_info['phone'] = participant.get('id')
+                    break
+    except Exception:
+        pass
+
+    return contact_info
+
+def search_chats(data, keywords, min_score=10, max_results=100, start_date=None, end_date=None, chat_filter=None):
+    """
+    Search through WhatsApp chats for messages containing keywords.
+
+    Parameters:
+    - data: The WhatsApp chat data
+    - keywords: List of keywords to search for
+    - min_score: Minimum relevance score to include in results
+    - max_results: Maximum number of results to return
+    - start_date: Optional start date filter (YYYY-MM-DD)
+    - end_date: Optional end date filter (YYYY-MM-DD)
+    - chat_filter: Optional chat name filter
+
+    Returns:
+    - results: List of matching messages with metadata and scores
+    """
+    results = []
+
+    # Convert date strings to timestamps if provided
+    start_timestamp = None
+    end_timestamp = None
+
+    if start_date:
+        try:
+            start_timestamp = datetime.strptime(start_date, "%Y-%m-%d").timestamp()
+        except ValueError:
+            print(f"Invalid start date format: {start_date}. Use YYYY-MM-DD.")
+
+    if end_date:
+        try:
+            end_timestamp = datetime.strptime(end_date, "%Y-%m-%d").timestamp()
+            # Set to end of day
+            end_timestamp += 86399  # 23:59:59
+        except ValueError:
+            print(f"Invalid end date format: {end_date}. Use YYYY-MM-DD.")
+
+    # Process each chat
+    for chat_id, chat_data in data.items():
+        chat_name = chat_data.get('name', chat_id)
+
+        # Apply chat filter if provided
+        if chat_filter and chat_filter.lower() not in chat_name.lower():
+            continue
+
+        # Get chat contact info
+        chat_contact = get_contact_info(data, chat_id)
+
+        # Process messages in this chat
+        messages = chat_data.get('messages', {})
+
+        for msg_id, message in messages.items():
+            # Skip system messages and media messages without captions
+            if message.get('meta', False) and not message.get('caption'):
+                continue
+
+            # Get message content (either data or caption)
+            msg_content = message.get('data', '')
+            if not msg_content and message.get('caption'):
+                msg_content = message.get('caption', '')
+
+            # Skip if message is "The media is missing" without caption
+            if msg_content == "The media is missing" and not message.get('caption'):
+                continue
+
+            # Apply date filters if provided
+            msg_timestamp = message.get('timestamp', 0)
+            if start_timestamp and msg_timestamp < start_timestamp:
+                continue
+            if end_timestamp and msg_timestamp > end_timestamp:
+                continue
+
+            # Calculate relevance score
+            score, matched_keywords = calculate_relevance_score(msg_content, keywords)
+
+            # Skip if score is below threshold
+            if score < min_score or not matched_keywords:
+                continue
+
+            # Get sender information
+            sender_id = message.get('sender_id')
+            sender_name = message.get('sender')
+            from_me = message.get('from_me', False)
+
+            # Format sender name
+            if from_me:
+                sender = "Me"
+            elif sender_name:
+                sender = sender_name
+            else:
+                # Try to get a better sender name
+                if sender_id:
+                    sender = format_phone_number(sender_id)
+                else:
+                    sender = "Unknown"
+
+            # Format timestamp as readable date
+            date_str = datetime.fromtimestamp(msg_timestamp).strftime('%Y-%m-%d %H:%M:%S')
+
+            # Get context (previous and next messages)
+            context = get_message_context(data, chat_id, msg_id, 2)
+
+            # Get chat display name
+            if chat_contact['display_name']:
+                display_chat_name = chat_contact['display_name']
+            elif chat_contact['name']:
+                display_chat_name = chat_contact['name']
+            else:
+                display_chat_name = format_phone_number(chat_id)
+
+            results.append({
+                'chat_id': chat_id,
+                'chat_name': display_chat_name,
+                'sender': sender,
+                'sender_id': sender_id,
+                'from_me': from_me,
+                'date': date_str,
+                'message': msg_content,
+                'score': score,
+                'matched_keywords': matched_keywords,
+                'context': context
+            })
+
+            # Sort by score and limit results
+            if len(results) >= max_results * 2:
+                results.sort(key=lambda x: x['score'], reverse=True)
+                results = results[:max_results]
+
+    # Final sort by score
+    results.sort(key=lambda x: x['score'], reverse=True)
+    return results[:max_results]
+
+def get_message_context(data, chat_id, msg_id, context_size=2):
+    """
+    Get surrounding messages for context.
+
+    Parameters:
+    - data: The WhatsApp chat data
+    - chat_id: ID of the chat
+    - msg_id: ID of the message
+    - context_size: Number of messages before and after to include
+
+    Returns:
+    - context: List of context messages
+    """
+    context = []
+
+    try:
+        # Get all message IDs in this chat
+        messages = data[chat_id]['messages']
+        msg_ids = sorted(messages.keys(), key=lambda x: messages[x].get('timestamp', 0))
+
+        # Find the index of the current message
+        if msg_id in msg_ids:
+            current_index = msg_ids.index(msg_id)
+
+            # Get previous messages
+            start_index = max(0, current_index - context_size)
+            for i in range(start_index, current_index):
+                prev_id = msg_ids[i]
+                prev_msg = messages[prev_id]
+
+                # Skip system messages
+                if prev_msg.get('meta', False) and not prev_msg.get('caption'):
+                    continue
+
+                # Get message content
+                content = prev_msg.get('data', '')
+                if not content and prev_msg.get('caption'):
+                    content = prev_msg.get('caption', '')
+
+                # Skip if message is "The media is missing" without caption
+                if content == "The media is missing" and not prev_msg.get('caption'):
+                    continue
+
+                # Get sender information
+                sender_id = prev_msg.get('sender_id')
+                sender_name = prev_msg.get('sender')
+                from_me = prev_msg.get('from_me', False)
+
+                # Format sender name
+                if from_me:
+                    sender = "Me"
+                elif sender_name:
+                    sender = sender_name
+                else:
+                    # Try to get a better sender name
+                    if sender_id:
+                        sender = format_phone_number(sender_id)
+                    else:
+                        sender = "Unknown"
+
+                date_str = datetime.fromtimestamp(prev_msg.get('timestamp', 0)).strftime('%Y-%m-%d %H:%M:%S')
+
+                context.append({
+                    'type': 'previous',
+                    'sender': sender,
+                    'sender_id': sender_id,
+                    'from_me': from_me,
+                    'date': date_str,
+                    'message': content
+                })
+
+            # Get next messages
+            end_index = min(len(msg_ids), current_index + context_size + 1)
+            for i in range(current_index + 1, end_index):
+                next_id = msg_ids[i]
+                next_msg = messages[next_id]
+
+                # Skip system messages
+                if next_msg.get('meta', False) and not next_msg.get('caption'):
+                    continue
+
+                # Get message content
+                content = next_msg.get('data', '')
+                if not content and next_msg.get('caption'):
+                    content = next_msg.get('caption', '')
+
+                # Skip if message is "The media is missing" without caption
+                if content == "The media is missing" and not next_msg.get('caption'):
+                    continue
+
+                # Get sender information
+                sender_id = next_msg.get('sender_id')
+                sender_name = next_msg.get('sender')
+                from_me = next_msg.get('from_me', False)
+
+                # Format sender name
+                if from_me:
+                    sender = "Me"
+                elif sender_name:
+                    sender = sender_name
+                else:
+                    # Try to get a better sender name
+                    if sender_id:
+                        sender = format_phone_number(sender_id)
+                    else:
+                        sender = "Unknown"
+
+                date_str = datetime.fromtimestamp(next_msg.get('timestamp', 0)).strftime('%Y-%m-%d %H:%M:%S')
+
+                context.append({
+                    'type': 'next',
+                    'sender': sender,
+                    'sender_id': sender_id,
+                    'from_me': from_me,
+                    'date': date_str,
+                    'message': content
+                })
+    except Exception as e:
+        # If there's any error getting context, just return an empty list
+        pass
+
+    return context
+
+def print_results(results, show_context=True):
+    """
+    Print search results in a readable format.
+
+    Parameters:
+    - results: List of search results
+    - show_context: Whether to show context messages
+    """
+    if not results:
+        print("No matching messages found.")
+        return
+
+    print(f"\nFound {len(results)} matching messages:\n")
+
+    for i, result in enumerate(results, 1):
+        print(f"Result {i} (Score: {result['score']:.1f}):")
+        print(f"Chat: {result['chat_name']}")
+
+        # Show sender with formatted phone number if available
+        sender_display = result['sender']
+        if result['from_me']:
+            sender_display = "Me"
+        elif result.get('sender_id') and sender_display == "Unknown":
+            sender_display = format_phone_number(result['sender_id'])
+
+        print(f"Sender: {sender_display}")
+        print(f"Date: {result['date']}")
+        print(f"Matched keywords: {', '.join(result['matched_keywords'])}")
+        print(f"Message: {result['message']}")
+
+        if show_context and result['context']:
+            print("\nContext:")
+            for ctx in result['context']:
+                prefix = "↑ " if ctx['type'] == 'previous' else "↓ "
+
+                # Format sender name for context messages
+                ctx_sender = ctx['sender']
+                if ctx.get('from_me'):
+                    ctx_sender = "Me"
+                elif ctx.get('sender_id') and ctx_sender == "Unknown":
+                    ctx_sender = format_phone_number(ctx['sender_id'])
+
+                print(f"  {prefix}[{ctx['date']}] {ctx_sender}: {ctx['message']}")
+
+        print("\n" + "-" * 80 + "\n")
+
+def main():
+    parser = argparse.ArgumentParser(description='Search WhatsApp chats for keywords and calculate relevance scores.')
+    parser.add_argument('--file', '-f', default='result.json', help='Path to the WhatsApp chat JSON file')
+    parser.add_argument('--keywords', '-k', required=True, help='Comma-separated list of keywords to search for')
+    parser.add_argument('--min-score', '-m', type=float, default=10.0, help='Minimum relevance score (0-100)')
+    parser.add_argument('--max-results', '-r', type=int, default=20, help='Maximum number of results to show')
+    parser.add_argument('--start-date', '-s', help='Start date filter (YYYY-MM-DD)')
+    parser.add_argument('--end-date', '-e', help='End date filter (YYYY-MM-DD)')
+    parser.add_argument('--chat', '-c', help='Filter by chat name')
+    parser.add_argument('--no-context', action='store_true', help='Hide context messages')
+    parser.add_argument('--output', '-o', help='Output results to a file')
+
+    args = parser.parse_args()
+
+    # Load data
+    data = load_json_data(args.file)
+
+    # Parse keywords
+    keywords = [k.strip() for k in args.keywords.split(',')]
+    print(f"Searching for keywords: {', '.join(keywords)}")
+
+    # Search chats
+    results = search_chats(
+        data,
+        keywords,
+        min_score=args.min_score,
+        max_results=args.max_results,
+        start_date=args.start_date,
+        end_date=args.end_date,
+        chat_filter=args.chat
+    )
+
+    # Print results
+    print_results(results, show_context=not args.no_context)
+
+    # Save to file if requested
+    if args.output:
+        try:
+            with open(args.output, 'w', encoding='utf-8') as f:
+                json.dump(results, f, ensure_ascii=False, indent=2)
+            print(f"Results saved to {args.output}")
+        except Exception as e:
+            print(f"Error saving results to file: {e}")
+
+if __name__ == '__main__':
+    main()
