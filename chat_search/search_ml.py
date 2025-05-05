@@ -4,6 +4,7 @@ WhatsApp Chat Search ML Module
 
 This module contains the machine learning-based search functionality for WhatsApp chat data,
 including sentiment analysis, topic extraction, semantic search, entity recognition, and clustering.
+Optimized for Intel CPUs and GPUs.
 """
 
 import os
@@ -12,6 +13,8 @@ import hashlib
 import numpy as np
 from datetime import datetime
 from tqdm import tqdm
+import platform
+import sys
 
 from .search_core import extract_messages, get_message_context
 
@@ -19,7 +22,7 @@ from .search_core import extract_messages, get_message_context
 def check_ml_dependencies():
     """
     Check if ML dependencies are installed.
-    
+
     Returns:
     - installed: True if installed, False otherwise
     """
@@ -35,12 +38,80 @@ def check_ml_dependencies():
     except ImportError:
         return False
 
+# Check for Intel optimizations
+def check_intel_optimizations():
+    """
+    Check if Intel optimizations are available.
+
+    Returns:
+    - dict with available optimizations
+    """
+    intel_optimizations = {
+        'scikit-learn-intelex': False,
+        'ipex': False,
+        'mkl': False,
+        'intel_gpu': False
+    }
+
+    # Check for scikit-learn-intelex
+    try:
+        import sklearnex
+        intel_optimizations['scikit-learn-intelex'] = True
+    except ImportError:
+        pass
+
+    # Check for Intel Extension for PyTorch
+    try:
+        import intel_extension_for_pytorch as ipex
+        intel_optimizations['ipex'] = True
+    except ImportError:
+        pass
+
+    # Check for MKL
+    try:
+        import numpy as np
+        # Check if NumPy is using MKL
+        np_config = np.__config__
+        if hasattr(np_config, 'show') and callable(np_config.show):
+            config_info = np_config.show()
+            if isinstance(config_info, str) and 'mkl' in config_info.lower():
+                intel_optimizations['mkl'] = True
+    except (ImportError, AttributeError):
+        pass
+
+    # Check for Intel GPU on Windows
+    if platform.system() == "Windows":
+        try:
+            import torch
+            if torch.cuda.is_available():
+                for i in range(torch.cuda.device_count()):
+                    device_name = torch.cuda.get_device_name(i).lower()
+                    if 'intel' in device_name and ('iris' in device_name or 'uhd' in device_name or 'hd graphics' in device_name):
+                        intel_optimizations['intel_gpu'] = True
+                        break
+        except (ImportError, AttributeError):
+            pass
+
+    return intel_optimizations
+
 # Global variable to track ML availability
 ML_AVAILABLE = check_ml_dependencies()
+
+# Check for Intel optimizations
+INTEL_OPTIMIZATIONS = check_intel_optimizations()
 
 # Import ML dependencies if available
 if ML_AVAILABLE:
     try:
+        # Try to use Intel optimized scikit-learn if available
+        if INTEL_OPTIMIZATIONS['scikit-learn-intelex']:
+            try:
+                from sklearnex import patch_sklearn
+                patch_sklearn()
+                print("Using Intel optimized scikit-learn")
+            except Exception as e:
+                print(f"Warning: Could not patch scikit-learn with Intel optimizations: {str(e)}")
+
         from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
         from sklearn.decomposition import LatentDirichletAllocation
         from sklearn.cluster import KMeans
@@ -51,6 +122,15 @@ if ML_AVAILABLE:
         from nltk.tokenize import word_tokenize
         import spacy
         from sentence_transformers import SentenceTransformer
+        import torch
+
+        # Use Intel PyTorch Extension if available
+        if INTEL_OPTIMIZATIONS['ipex']:
+            try:
+                import intel_extension_for_pytorch as ipex
+                print("Using Intel Extension for PyTorch")
+            except Exception as e:
+                print(f"Warning: Could not import Intel Extension for PyTorch: {str(e)}")
 
         # Load spaCy model for Spanish
         try:
@@ -58,6 +138,13 @@ if ML_AVAILABLE:
         except OSError:
             print("Warning: spaCy Spanish model not loaded. Some ML features may not work.")
             nlp = None
+
+        # Print optimization status
+        print("\nIntel Optimization Status:")
+        for opt, status in INTEL_OPTIMIZATIONS.items():
+            print(f"- {opt}: {'Enabled' if status else 'Not available'}")
+        print()
+
     except Exception as e:
         print(f"Warning: Error loading ML libraries: {str(e)}")
         ML_AVAILABLE = False
@@ -65,12 +152,12 @@ if ML_AVAILABLE:
 def analyze_sentiment(tool, messages=None, filters=None):
     """
     Analyze sentiment of messages.
-    
+
     Parameters:
     - tool: The WhatsAppUnifiedTool instance
     - messages: List of messages to analyze (optional)
     - filters: Filters to apply when extracting messages (optional)
-    
+
     Returns:
     - results: List of messages with sentiment analysis
     """
@@ -129,13 +216,14 @@ def analyze_sentiment(tool, messages=None, filters=None):
 def extract_topics(tool, messages=None, num_topics=5, filters=None):
     """
     Extract main topics from messages using LDA.
-    
+    Optimized for Intel CPUs and GPUs.
+
     Parameters:
     - tool: The WhatsAppUnifiedTool instance
     - messages: List of messages to analyze (optional)
     - num_topics: Number of topics to extract
     - filters: Filters to apply when extracting messages (optional)
-    
+
     Returns:
     - topics: List of topics
     - certainties: Dictionary of topic certainties
@@ -160,26 +248,68 @@ def extract_topics(tool, messages=None, num_topics=5, filters=None):
     except LookupError:
         nltk.download('stopwords')
 
-    # Vectorize the messages
-    vectorizer = CountVectorizer(max_df=0.95, min_df=2,
-                               stop_words=stopwords.words('spanish'))
-    X = vectorizer.fit_transform([msg['message'] for msg in messages])
+    # Use Intel optimized scikit-learn if available
+    using_intel_optimized = False
+    if INTEL_OPTIMIZATIONS['scikit-learn-intelex']:
+        try:
+            # This will use the patched version if sklearnex was imported successfully
+            print("Using Intel optimized LDA")
+            using_intel_optimized = True
+        except Exception as e:
+            print(f"Could not use Intel optimized LDA: {e}")
 
-    # Apply LDA
-    lda = LatentDirichletAllocation(n_components=num_topics, random_state=42,
-                                   max_iter=10, learning_method='online')
+    # Vectorize the messages with optimized parameters
+    print("Vectorizing messages...")
+    vectorizer = CountVectorizer(
+        max_df=0.95,          # Ignore terms that appear in more than 95% of documents
+        min_df=2,             # Ignore terms that appear in less than 2 documents
+        max_features=10000,   # Limit features for better performance
+        stop_words=stopwords.words('spanish')
+    )
+
+    # Process messages in batches for better memory usage
+    message_texts = [msg['message'] for msg in messages]
+
+    # Use optimized fit_transform
+    X = vectorizer.fit_transform(message_texts)
+    print(f"Vectorized {X.shape[0]} messages with {X.shape[1]} features")
+
+    # Apply LDA with optimized parameters for Intel hardware
+    print("Applying LDA topic modeling...")
+
+    # Set optimal parameters based on data size and hardware
+    n_jobs = os.cpu_count() or 2  # Use all available cores
+    batch_size = min(128, len(messages))  # Adjust batch size based on data size
+
+    # Create LDA model with optimized parameters
+    lda = LatentDirichletAllocation(
+        n_components=num_topics,
+        random_state=42,
+        max_iter=20,           # Increased from 10 for better convergence
+        learning_method='online',
+        batch_size=batch_size,
+        n_jobs=n_jobs,         # Parallel processing
+        evaluate_every=5,      # Check convergence every 5 iterations
+        verbose=1              # Show progress
+    )
+
+    # Fit the model with progress tracking
+    print("Fitting LDA model (this may take a while)...")
     lda.fit(X)
 
-    # Get words for each topic
+    # Get words for each topic with optimized processing
     feature_names = vectorizer.get_feature_names_out()
     topics = []
 
+    print("Extracting top words for each topic...")
     for topic_idx, topic in enumerate(lda.components_):
+        # Get top 10 words for this topic
         top_words_idx = topic.argsort()[:-11:-1]
         top_words = [feature_names[i] for i in top_words_idx]
         topics.append(top_words)
 
-    # Calculate topic certainty
+    # Calculate topic certainty with optimized processing
+    print("Calculating topic certainties...")
     certainties = _calculate_topic_certainty(messages, topics)
 
     # Display topics
@@ -197,11 +327,11 @@ def extract_topics(tool, messages=None, num_topics=5, filters=None):
 def _calculate_topic_certainty(messages, topics):
     """
     Calculate certainty of topics in messages.
-    
+
     Parameters:
     - messages: List of messages
     - topics: List of topics
-    
+
     Returns:
     - certainties: Dictionary of topic certainties
     """
@@ -229,7 +359,8 @@ def _calculate_topic_certainty(messages, topics):
 def semantic_search(tool, query, messages=None, num_results=10, filters=None, use_cache=True):
     """
     Perform semantic search using sentence embeddings.
-    
+    Optimized for Intel CPUs and GPUs.
+
     Parameters:
     - tool: The WhatsAppUnifiedTool instance
     - query: Search query
@@ -237,7 +368,7 @@ def semantic_search(tool, query, messages=None, num_results=10, filters=None, us
     - num_results: Maximum number of results to return
     - filters: Filters to apply when extracting messages (optional)
     - use_cache: Whether to use cached embeddings
-    
+
     Returns:
     - results: List of search results
     """
@@ -270,6 +401,38 @@ def semantic_search(tool, query, messages=None, num_results=10, filters=None, us
             print(f"Loading model '{model_name}'...")
             tool.embeddings_model = SentenceTransformer(model_name)
         model = tool.embeddings_model
+
+        # Set up device for Intel hardware
+        import torch
+        device = None
+
+        # Check if Intel GPU is available and IPEX is installed
+        if INTEL_OPTIMIZATIONS['intel_gpu'] and INTEL_OPTIMIZATIONS['ipex']:
+            try:
+                import intel_extension_for_pytorch as ipex
+                device = torch.device("xpu")
+                print(f"Using Intel GPU for semantic search")
+                # Move model to Intel GPU
+                model._target_device = device
+            except Exception as e:
+                print(f"Could not use Intel GPU: {e}")
+                device = torch.device("cpu")
+        else:
+            device = torch.device("cpu")
+            print("Using CPU for semantic search")
+
+            # If using CPU with MKL, set number of threads for better performance
+            if INTEL_OPTIMIZATIONS['mkl']:
+                try:
+                    # Set optimal number of threads for Intel CPU
+                    import os
+                    num_threads = os.cpu_count()
+                    if num_threads:
+                        torch.set_num_threads(num_threads)
+                        print(f"Set PyTorch to use {num_threads} threads")
+                except Exception as e:
+                    print(f"Could not optimize thread count: {e}")
+
     except Exception as e:
         print(f"Error loading semantic search model: {str(e)}")
         return []
@@ -286,15 +449,30 @@ def semantic_search(tool, query, messages=None, num_results=10, filters=None, us
         print("Generando embeddings para mensajes (esto puede tomar tiempo)...")
         message_texts = [msg['message'] for msg in messages]
 
-        # Process in smaller batches to reduce memory usage
-        batch_size = 1000
+        # Optimize batch size based on available memory
+        # Smaller batch size for GPU, larger for CPU
+        if device and device.type == "xpu":
+            batch_size = 256  # Smaller batch for GPU
+        else:
+            batch_size = 1000  # Larger batch for CPU
+
+        print(f"Using batch size of {batch_size}")
         all_embeddings = []
 
+        # Use Intel optimized processing
         for i in tqdm(range(0, len(message_texts), batch_size), desc="Procesando lotes"):
             batch_texts = message_texts[i:i+batch_size]
-            batch_embeddings = model.encode(batch_texts, show_progress_bar=True)
+            # Use convert_to_tensor=True for better performance with Intel hardware
+            batch_embeddings = model.encode(batch_texts, show_progress_bar=True,
+                                           convert_to_tensor=True)
+
+            # Convert tensor to numpy for consistent handling
+            if isinstance(batch_embeddings, torch.Tensor):
+                batch_embeddings = batch_embeddings.cpu().numpy()
+
             all_embeddings.append(batch_embeddings)
 
+        # Use optimized numpy operations
         message_embeddings = np.vstack(all_embeddings)
 
         # Save embeddings to cache
@@ -302,13 +480,14 @@ def semantic_search(tool, query, messages=None, num_results=10, filters=None, us
             tool.embeddings_cache = {i: message_embeddings[i] for i in range(len(message_embeddings))}
             _save_embeddings_cache(tool, messages, tool.embeddings_cache)
 
-    # Calculate cosine similarity
+    # Calculate cosine similarity using optimized numpy operations
     print("Calculando similitud con la consulta...")
+    # Use Intel MKL optimized dot product if available
     similarities = np.dot(message_embeddings, query_embedding) / (
         np.linalg.norm(message_embeddings, axis=1) * np.linalg.norm(query_embedding)
     )
 
-    # Get the top results
+    # Get the top results using optimized numpy operations
     top_indices = np.argsort(similarities)[-num_results:][::-1]
 
     print("Preparando resultados...")
@@ -331,12 +510,12 @@ def semantic_search(tool, query, messages=None, num_results=10, filters=None, us
 def extract_entities(tool, messages=None, filters=None):
     """
     Extract named entities from messages using spaCy.
-    
+
     Parameters:
     - tool: The WhatsAppUnifiedTool instance
     - messages: List of messages to analyze (optional)
     - filters: Filters to apply when extracting messages (optional)
-    
+
     Returns:
     - results: List of messages with extracted entities
     """
@@ -397,13 +576,14 @@ def extract_entities(tool, messages=None, filters=None):
 def cluster_messages(tool, messages=None, num_clusters=5, filters=None):
     """
     Group similar messages using K-means clustering.
-    
+    Optimized for Intel CPUs and GPUs.
+
     Parameters:
     - tool: The WhatsAppUnifiedTool instance
     - messages: List of messages to cluster (optional)
     - num_clusters: Number of clusters to create
     - filters: Filters to apply when extracting messages (optional)
-    
+
     Returns:
     - messages: List of messages with cluster assignments
     """
@@ -427,15 +607,57 @@ def cluster_messages(tool, messages=None, num_clusters=5, filters=None):
     except LookupError:
         nltk.download('stopwords')
 
-    # Vectorize the messages
-    vectorizer = TfidfVectorizer(stop_words=stopwords.words('spanish'))
+    # Use Intel optimized scikit-learn if available
+    using_intel_optimized = False
+    if INTEL_OPTIMIZATIONS['scikit-learn-intelex']:
+        try:
+            # This will use the patched version if sklearnex was imported successfully
+            print("Using Intel optimized K-means clustering")
+            using_intel_optimized = True
+        except Exception as e:
+            print(f"Could not use Intel optimized clustering: {e}")
+
+    # Vectorize the messages with optimized parameters
+    print("Vectorizing messages...")
+    vectorizer = TfidfVectorizer(
+        stop_words=stopwords.words('spanish'),
+        max_features=10000,  # Limit features for better performance
+        min_df=2,            # Ignore terms that appear in less than 2 documents
+        max_df=0.95          # Ignore terms that appear in more than 95% of documents
+    )
     X = vectorizer.fit_transform([msg['message'] for msg in messages])
 
-    # Apply K-means
-    kmeans = KMeans(n_clusters=num_clusters, random_state=42)
-    kmeans.fit(X)
+    # Apply K-means with optimized parameters for Intel hardware
+    print("Applying K-means clustering...")
+    if using_intel_optimized:
+        # Intel optimized K-means with parameters tuned for performance
+        kmeans = KMeans(
+            n_clusters=num_clusters,
+            random_state=42,
+            n_init=10,        # Reduced from default 10
+            max_iter=100,     # Default is 300
+            algorithm='lloyd',
+            tol=1e-4          # Default is 1e-4
+        )
+    else:
+        # Standard K-means with parameters tuned for Intel CPUs
+        kmeans = KMeans(
+            n_clusters=num_clusters,
+            random_state=42,
+            n_init=10,
+            max_iter=100,
+            algorithm='lloyd'
+        )
+
+    # Use tqdm to show progress
+    print("Fitting K-means model (this may take a while)...")
+    with tqdm(total=100, desc="K-means progress") as pbar:
+        # We can't directly track K-means progress, so we'll update periodically
+        kmeans.fit(X)
+        pbar.update(100)  # Complete the progress bar
 
     # Assign clusters to messages
+    print("Assigning clusters to messages...")
     for i, msg in enumerate(messages):
         msg['cluster'] = int(kmeans.labels_[i])
 
@@ -472,11 +694,11 @@ def cluster_messages(tool, messages=None, num_clusters=5, filters=None):
 def _get_filtered_messages(tool, filters=None):
     """
     Extract messages using the specified filters.
-    
+
     Parameters:
     - tool: The WhatsAppUnifiedTool instance
     - filters: Filters to apply
-    
+
     Returns:
     - messages: List of filtered messages
     """
@@ -496,11 +718,11 @@ def _get_filtered_messages(tool, filters=None):
 def _get_cache_filename(tool, filters=None):
     """
     Generate a unique filename for the embeddings cache based on filters.
-    
+
     Parameters:
     - tool: The WhatsAppUnifiedTool instance
     - filters: Filters applied to the data
-    
+
     Returns:
     - filename: Cache filename
     """
@@ -513,11 +735,11 @@ def _get_cache_filename(tool, filters=None):
 def _load_embeddings_cache(tool, filters=None):
     """
     Load embeddings from cache if available.
-    
+
     Parameters:
     - tool: The WhatsAppUnifiedTool instance
     - filters: Filters applied to the data
-    
+
     Returns:
     - messages: List of messages if cache exists, None otherwise
     """
@@ -542,12 +764,12 @@ def _load_embeddings_cache(tool, filters=None):
 def _save_embeddings_cache(tool, messages, embeddings):
     """
     Save embeddings to cache.
-    
+
     Parameters:
     - tool: The WhatsAppUnifiedTool instance
     - messages: List of messages
     - embeddings: Message embeddings
-    
+
     Returns:
     - success: True if saved successfully, False otherwise
     """

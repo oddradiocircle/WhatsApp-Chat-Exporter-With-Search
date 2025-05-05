@@ -1,0 +1,2181 @@
+{
+  "prospects": {
+    "573204803024@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573204803024",
+      "total_score": 28.0,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 28.0,
+          "message_count": 1,
+          "keyword_density": 0.25,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.25,
+      "last_interaction": null,
+      "potential_score": 36.32000000000001,
+      "potential_level": "BAJO"
+    },
+    "573168771763@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "573168771763",
+      "total_score": 28.0,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 28.0,
+          "message_count": 1,
+          "keyword_density": 0.25,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.25,
+      "last_interaction": null,
+      "potential_score": 36.32000000000001,
+      "potential_level": "BAJO"
+    },
+    "573194410550@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "573194410550",
+      "total_score": 28.0,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 28.0,
+          "message_count": 1,
+          "keyword_density": 0.25,
+          "keyword_counts": {
+            "musica": 1
+          }
+        }
+      },
+      "keyword_density": 0.25,
+      "last_interaction": null,
+      "potential_score": 36.32000000000001,
+      "potential_level": "BAJO"
+    },
+    "573113579187@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "573113579187",
+      "total_score": 27.0,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 27.0,
+          "message_count": 1,
+          "keyword_density": 0.2,
+          "keyword_counts": {
+            "musica": 1
+          }
+        }
+      },
+      "keyword_density": 0.2,
+      "last_interaction": null,
+      "potential_score": 36.28,
+      "potential_level": "BAJO"
+    },
+    "5493854165653": {
+      "display_name": "5493854165653",
+      "phone": "5493854165653",
+      "total_score": 26.333333333333332,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 26.333333333333332,
+          "message_count": 1,
+          "keyword_density": 0.16666666666666666,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.16666666666666666,
+      "last_interaction": null,
+      "potential_score": 31.253333333333327,
+      "potential_level": "BAJO"
+    },
+    "573148894999@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "573148894999",
+      "total_score": 25.886163522012573,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 25.886163522012573,
+          "message_count": 1,
+          "keyword_density": 0.16666666666666666,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.16666666666666666,
+      "last_interaction": null,
+      "potential_score": 31.235446540880496,
+      "potential_level": "BAJO"
+    },
+    "573012570596@s.whatsapp.net": {
+      "display_name": "Uppertrip",
+      "phone": "573012570596",
+      "total_score": 79.20624403844742,
+      "message_count": 3,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 79.20624403844742,
+          "message_count": 3,
+          "keyword_density": 0.14285714285714285,
+          "keyword_counts": {
+            "musica": 3
+          }
+        }
+      },
+      "keyword_density": 0.14285714285714285,
+      "last_interaction": null,
+      "potential_score": 30.196821190109322,
+      "potential_level": "BAJO"
+    },
+    "573148738003@s.whatsapp.net": {
+      "display_name": "Juan Mario Tobón",
+      "phone": "573148738003",
+      "total_score": 25.28253968253968,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 25.28253968253968,
+          "message_count": 1,
+          "keyword_density": 0.14285714285714285,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.14285714285714285,
+      "last_interaction": null,
+      "potential_score": 27.63987301587301,
+      "potential_level": "BAJO"
+    },
+    "573137448272@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "573137448272",
+      "total_score": 49.4034398034398,
+      "message_count": 2,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 49.4034398034398,
+          "message_count": 2,
+          "keyword_density": 0.125,
+          "keyword_counts": {
+            "propiedad intelectual": 2
+          }
+        }
+      },
+      "keyword_density": 0.125,
+      "last_interaction": null,
+      "potential_score": 26.126137592137592,
+      "potential_level": "BAJO"
+    },
+    "573196157707@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573196157707",
+      "total_score": 49.335159817351595,
+      "message_count": 2,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 49.335159817351595,
+          "message_count": 2,
+          "keyword_density": 0.11764705882352941,
+          "keyword_counts": {
+            "propiedad intelectual": 1,
+            "musica": 1
+          }
+        }
+      },
+      "keyword_density": 0.11764705882352941,
+      "last_interaction": null,
+      "potential_score": 25.02046521622347,
+      "potential_level": "BAJO"
+    },
+    "573006011667@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "573006011667",
+      "total_score": 24.933333333333334,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 24.933333333333334,
+          "message_count": 1,
+          "keyword_density": 0.125,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.125,
+      "last_interaction": null,
+      "potential_score": 24.947333333333333,
+      "potential_level": "MUY BAJO"
+    },
+    "573004573742@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573004573742",
+      "total_score": 23.96111111111111,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 23.96111111111111,
+          "message_count": 1,
+          "keyword_density": 0.1111111111111111,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.1111111111111111,
+      "last_interaction": null,
+      "potential_score": 22.825111111111113,
+      "potential_level": "MUY BAJO"
+    },
+    "573105225513": {
+      "display_name": "573105225513",
+      "phone": "573105225513",
+      "total_score": 23.66084656084656,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 23.66084656084656,
+          "message_count": 1,
+          "keyword_density": 0.1111111111111111,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.1111111111111111,
+      "last_interaction": null,
+      "potential_score": 22.81310052910053,
+      "potential_level": "MUY BAJO"
+    },
+    "573188449099@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "573188449099",
+      "total_score": 23.30232172470978,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 23.30232172470978,
+          "message_count": 1,
+          "keyword_density": 0.1111111111111111,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.1111111111111111,
+      "last_interaction": null,
+      "potential_score": 22.79875953565506,
+      "potential_level": "MUY BAJO"
+    },
+    "573007923360": {
+      "display_name": "573007923360",
+      "phone": "573007923360",
+      "total_score": 292.14142093331225,
+      "message_count": 15,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 292.14142093331225,
+          "message_count": 15,
+          "keyword_density": 0.017396907216494846,
+          "keyword_counts": {
+            "propiedad intelectual": 26,
+            "musica": 1
+          }
+        }
+      },
+      "keyword_density": 0.017396907216494846,
+      "last_interaction": null,
+      "potential_score": 22.295192919806716,
+      "potential_level": "MUY BAJO"
+    },
+    "5491160392365@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "5491160392365",
+      "total_score": 23.097014925373134,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 23.097014925373134,
+          "message_count": 1,
+          "keyword_density": 0.1,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.1,
+      "last_interaction": null,
+      "potential_score": 21.123880597014924,
+      "potential_level": "MUY BAJO"
+    },
+    "573006035597@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573006035597",
+      "total_score": 49.235207496653274,
+      "message_count": 2,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 49.235207496653274,
+          "message_count": 2,
+          "keyword_density": 0.09090909090909091,
+          "keyword_counts": {
+            "musica": 1,
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.09090909090909091,
+      "last_interaction": null,
+      "potential_score": 21.00577193622977,
+      "potential_level": "MUY BAJO"
+    },
+    "573128326361@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "573128326361",
+      "total_score": 169.55240052862294,
+      "message_count": 7,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 169.55240052862294,
+          "message_count": 7,
+          "keyword_density": 0.044444444444444446,
+          "keyword_counts": {
+            "musica": 6,
+            "propiedad intelectual": 2
+          }
+        }
+      },
+      "keyword_density": 0.044444444444444446,
+      "last_interaction": null,
+      "potential_score": 19.848762687811583,
+      "potential_level": "MUY BAJO"
+    },
+    "120363124802594216@g.us": {
+      "display_name": "573128431716",
+      "phone": "120363124802594216",
+      "total_score": 46.369919269919265,
+      "message_count": 2,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 46.369919269919265,
+          "message_count": 2,
+          "keyword_density": 0.08333333333333333,
+          "keyword_counts": {
+            "musica": 2
+          }
+        }
+      },
+      "keyword_density": 0.08333333333333333,
+      "last_interaction": null,
+      "potential_score": 19.754796770796766,
+      "potential_level": "MUY BAJO"
+    },
+    "573005485019@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573005485019",
+      "total_score": 22.69090909090909,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 22.69090909090909,
+          "message_count": 1,
+          "keyword_density": 0.09090909090909091,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.09090909090909091,
+      "last_interaction": null,
+      "potential_score": 19.744000000000003,
+      "potential_level": "MUY BAJO"
+    },
+    "Sebastián Sánchez-Polanco": {
+      "display_name": "Sebastián Sánchez-Polanco",
+      "phone": "Sebastián Sánchez-Polanco",
+      "total_score": 206.94176560448872,
+      "message_count": 11,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 206.94176560448872,
+          "message_count": 11,
+          "keyword_density": 0.020833333333333332,
+          "keyword_counts": {
+            "propiedad intelectual": 15
+          }
+        }
+      },
+      "keyword_density": 0.020833333333333332,
+      "last_interaction": null,
+      "potential_score": 18.60267062417955,
+      "potential_level": "MUY BAJO"
+    },
+    "593996802492": {
+      "display_name": "593996802492",
+      "phone": "593996802492",
+      "total_score": 21.834567901234568,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 21.834567901234568,
+          "message_count": 1,
+          "keyword_density": 0.08333333333333333,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.08333333333333333,
+      "last_interaction": null,
+      "potential_score": 18.573382716049377,
+      "potential_level": "MUY BAJO"
+    },
+    "573145697450@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "573145697450",
+      "total_score": 46.2845480137629,
+      "message_count": 2,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 46.2845480137629,
+          "message_count": 2,
+          "keyword_density": 0.07142857142857142,
+          "keyword_counts": {
+            "propiedad intelectual": 2
+          }
+        }
+      },
+      "keyword_density": 0.07142857142857142,
+      "last_interaction": null,
+      "potential_score": 17.965667634836226,
+      "potential_level": "MUY BAJO"
+    },
+    "573122961608@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "573122961608",
+      "total_score": 42.363638799605624,
+      "message_count": 2,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 42.363638799605624,
+          "message_count": 2,
+          "keyword_density": 0.07142857142857142,
+          "keyword_counts": {
+            "propiedad intelectual": 2
+          }
+        }
+      },
+      "keyword_density": 0.07142857142857142,
+      "last_interaction": null,
+      "potential_score": 17.808831266269934,
+      "potential_level": "MUY BAJO"
+    },
+    "573506562276@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573506562276",
+      "total_score": 22.928125,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 22.928125,
+          "message_count": 1,
+          "keyword_density": 0.07692307692307693,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.07692307692307693,
+      "last_interaction": null,
+      "potential_score": 17.655586538461538,
+      "potential_level": "MUY BAJO"
+    },
+    "50254992990": {
+      "display_name": "50254992990",
+      "phone": "50254992990",
+      "total_score": 21.13473945409429,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 21.13473945409429,
+          "message_count": 1,
+          "keyword_density": 0.07692307692307693,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.07692307692307693,
+      "last_interaction": null,
+      "potential_score": 17.583851116625308,
+      "potential_level": "MUY BAJO"
+    },
+    "573207517397@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573207517397",
+      "total_score": 88.97269035152925,
+      "message_count": 4,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 88.97269035152925,
+          "message_count": 4,
+          "keyword_density": 0.05263157894736842,
+          "keyword_counts": {
+            "propiedad intelectual": 4
+          }
+        }
+      },
+      "keyword_density": 0.05263157894736842,
+      "last_interaction": null,
+      "potential_score": 17.253644456166434,
+      "potential_level": "MUY BAJO"
+    },
+    "573147248684@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573147248684",
+      "total_score": 69.01383219954648,
+      "message_count": 3,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 69.01383219954648,
+          "message_count": 3,
+          "keyword_density": 0.05660377358490566,
+          "keyword_counts": {
+            "musica": 3
+          }
+        }
+      },
+      "keyword_density": 0.05660377358490567,
+      "last_interaction": null,
+      "potential_score": 16.85111932571771,
+      "potential_level": "MUY BAJO"
+    },
+    "56998223355": {
+      "display_name": "56998223355",
+      "phone": "56998223355",
+      "total_score": 20.99817629179331,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 20.99817629179331,
+          "message_count": 1,
+          "keyword_density": 0.07142857142857142,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.07142857142857142,
+      "last_interaction": null,
+      "potential_score": 16.754212765957444,
+      "potential_level": "MUY BAJO"
+    },
+    "573057660913@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573057660913",
+      "total_score": 20.957142857142856,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 20.957142857142856,
+          "message_count": 1,
+          "keyword_density": 0.07142857142857142,
+          "keyword_counts": {
+            "musica": 1
+          }
+        }
+      },
+      "keyword_density": 0.07142857142857142,
+      "last_interaction": null,
+      "potential_score": 16.752571428571425,
+      "potential_level": "MUY BAJO"
+    },
+    "573104287154@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573104287154",
+      "total_score": 20.657558945908455,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 20.657558945908455,
+          "message_count": 1,
+          "keyword_density": 0.07142857142857142,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.07142857142857142,
+      "last_interaction": null,
+      "potential_score": 16.740588072122048,
+      "potential_level": "MUY BAJO"
+    },
+    "573192763957@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "573192763957",
+      "total_score": 20.286335403726707,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 20.286335403726707,
+          "message_count": 1,
+          "keyword_density": 0.07142857142857142,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.07142857142857142,
+      "last_interaction": null,
+      "potential_score": 16.72573913043478,
+      "potential_level": "MUY BAJO"
+    },
+    "573045303826@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "573045303826",
+      "total_score": 21.1810606060606,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 21.1810606060606,
+          "message_count": 1,
+          "keyword_density": 0.06666666666666667,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.06666666666666667,
+      "last_interaction": null,
+      "potential_score": 16.047242424242423,
+      "potential_level": "MUY BAJO"
+    },
+    "5217131124960": {
+      "display_name": "5217131124960",
+      "phone": "5217131124960",
+      "total_score": 20.26342182890855,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 20.26342182890855,
+          "message_count": 1,
+          "keyword_density": 0.06666666666666667,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.06666666666666667,
+      "last_interaction": null,
+      "potential_score": 16.010536873156344,
+      "potential_level": "MUY BAJO"
+    },
+    "573113552746@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "573113552746",
+      "total_score": 64.01985788605506,
+      "message_count": 3,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 64.01985788605506,
+          "message_count": 3,
+          "keyword_density": 0.05,
+          "keyword_counts": {
+            "propiedad intelectual": 3
+          }
+        }
+      },
+      "keyword_density": 0.05000000000000001,
+      "last_interaction": null,
+      "potential_score": 15.660794315442203,
+      "potential_level": "MUY BAJO"
+    },
+    "573194676299@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "573194676299",
+      "total_score": 21.410975609756093,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 21.410975609756093,
+          "message_count": 1,
+          "keyword_density": 0.0625,
+          "keyword_counts": {
+            "musica": 1
+          }
+        }
+      },
+      "keyword_density": 0.0625,
+      "last_interaction": null,
+      "potential_score": 15.431439024390244,
+      "potential_level": "MUY BAJO"
+    },
+    "14074026373@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "14074026373",
+      "total_score": 20.972252747252746,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 20.972252747252746,
+          "message_count": 1,
+          "keyword_density": 0.0625,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.0625,
+      "last_interaction": null,
+      "potential_score": 15.41389010989011,
+      "potential_level": "MUY BAJO"
+    },
+    "50378855244@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "50378855244",
+      "total_score": 20.132795419052574,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 20.132795419052574,
+          "message_count": 1,
+          "keyword_density": 0.058823529411764705,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.058823529411764705,
+      "last_interaction": null,
+      "potential_score": 14.828841228526807,
+      "potential_level": "MUY BAJO"
+    },
+    "5215615835231": {
+      "display_name": "5215615835231",
+      "phone": "5215615835231",
+      "total_score": 19.970983687592682,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 19.970983687592682,
+          "message_count": 1,
+          "keyword_density": 0.058823529411764705,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.058823529411764705,
+      "last_interaction": null,
+      "potential_score": 14.82236875926841,
+      "potential_level": "MUY BAJO"
+    },
+    "573102685980": {
+      "display_name": "573102685980",
+      "phone": "573102685980",
+      "total_score": 20.808937198067632,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 20.808937198067632,
+          "message_count": 1,
+          "keyword_density": 0.05555555555555555,
+          "keyword_counts": {
+            "musica": 1
+          }
+        }
+      },
+      "keyword_density": 0.05555555555555555,
+      "last_interaction": null,
+      "potential_score": 14.365690821256038,
+      "potential_level": "MUY BAJO"
+    },
+    "573014134073@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573014134073",
+      "total_score": 20.389104638619198,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 20.389104638619198,
+          "message_count": 1,
+          "keyword_density": 0.05555555555555555,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.05555555555555555,
+      "last_interaction": null,
+      "potential_score": 14.3488975188781,
+      "potential_level": "MUY BAJO"
+    },
+    "573235022304@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573235022304",
+      "total_score": 19.86675849403122,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 19.86675849403122,
+          "message_count": 1,
+          "keyword_density": 0.05555555555555555,
+          "keyword_counts": {
+            "musica": 1
+          }
+        }
+      },
+      "keyword_density": 0.05555555555555555,
+      "last_interaction": null,
+      "potential_score": 14.328003673094582,
+      "potential_level": "MUY BAJO"
+    },
+    "573124800210": {
+      "display_name": "573124800210",
+      "phone": "573124800210",
+      "total_score": 19.372030651340996,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 19.372030651340996,
+          "message_count": 1,
+          "keyword_density": 0.05555555555555555,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.05555555555555555,
+      "last_interaction": null,
+      "potential_score": 14.308214559386974,
+      "potential_level": "MUY BAJO"
+    },
+    "573216991761@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573216991761",
+      "total_score": 58.383467804059705,
+      "message_count": 3,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 58.383467804059705,
+          "message_count": 3,
+          "keyword_density": 0.04081632653061224,
+          "keyword_counts": {
+            "propiedad intelectual": 4
+          }
+        }
+      },
+      "keyword_density": 0.04081632653061224,
+      "last_interaction": null,
+      "potential_score": 14.057787691754225,
+      "potential_level": "MUY BAJO"
+    },
+    "573007918221@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573007918221",
+      "total_score": 20.146837276677935,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 20.146837276677935,
+          "message_count": 1,
+          "keyword_density": 0.05263157894736842,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.05263157894736842,
+      "last_interaction": null,
+      "potential_score": 13.900610333172379,
+      "potential_level": "MUY BAJO"
+    },
+    "12019209833@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "12019209833",
+      "total_score": 20.029669306008383,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 20.029669306008383,
+          "message_count": 1,
+          "keyword_density": 0.05263157894736842,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.05263157894736842,
+      "last_interaction": null,
+      "potential_score": 13.895923614345596,
+      "potential_level": "MUY BAJO"
+    },
+    "573106264387@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "573106264387",
+      "total_score": 20.001662049861494,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 20.001662049861494,
+          "message_count": 1,
+          "keyword_density": 0.05263157894736842,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.05263157894736842,
+      "last_interaction": null,
+      "potential_score": 13.89480332409972,
+      "potential_level": "MUY BAJO"
+    },
+    "5491131223256": {
+      "display_name": "5491131223256",
+      "phone": "5491131223256",
+      "total_score": 94.80220877241447,
+      "message_count": 5,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 94.80220877241447,
+          "message_count": 5,
+          "keyword_density": 0.02666666666666667,
+          "keyword_counts": {
+            "propiedad intelectual": 8
+          }
+        }
+      },
+      "keyword_density": 0.026666666666666665,
+      "last_interaction": null,
+      "potential_score": 13.792088350896579,
+      "potential_level": "MUY BAJO"
+    },
+    "593994235134": {
+      "display_name": "593994235134",
+      "phone": "593994235134",
+      "total_score": 19.29684775318578,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 19.29684775318578,
+          "message_count": 1,
+          "keyword_density": 0.047619047619047616,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.047619047619047616,
+      "last_interaction": null,
+      "potential_score": 13.114731052984574,
+      "potential_level": "MUY BAJO"
+    },
+    "573128717434": {
+      "display_name": "573128717434",
+      "phone": "573128717434",
+      "total_score": 18.944155844155844,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 18.944155844155844,
+          "message_count": 1,
+          "keyword_density": 0.047619047619047616,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.047619047619047616,
+      "last_interaction": null,
+      "potential_score": 13.100623376623377,
+      "potential_level": "MUY BAJO"
+    },
+    "573006094556@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "573006094556",
+      "total_score": 72.2397279910523,
+      "message_count": 3,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 72.2397279910523,
+          "message_count": 3,
+          "keyword_density": 0.03002309468822171,
+          "keyword_counts": {
+            "propiedad intelectual": 13
+          }
+        }
+      },
+      "keyword_density": 0.030023094688221712,
+      "last_interaction": null,
+      "potential_score": 12.99305332287535,
+      "potential_level": "MUY BAJO"
+    },
+    "573012490747": {
+      "display_name": "573012490747",
+      "phone": "573012490747",
+      "total_score": 19.43287764866712,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 19.43287764866712,
+          "message_count": 1,
+          "keyword_density": 0.045454545454545456,
+          "keyword_counts": {
+            "musica": 1
+          }
+        }
+      },
+      "keyword_density": 0.045454545454545456,
+      "last_interaction": null,
+      "potential_score": 12.795496924128503,
+      "potential_level": "MUY BAJO"
+    },
+    "5218116525724": {
+      "display_name": "5218116525724",
+      "phone": "5218116525724",
+      "total_score": 19.00384615384615,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 19.00384615384615,
+          "message_count": 1,
+          "keyword_density": 0.043478260869565216,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.043478260869565216,
+      "last_interaction": null,
+      "potential_score": 12.481892976588629,
+      "potential_level": "MUY BAJO"
+    },
+    "573003031844@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573003031844",
+      "total_score": 43.28290745399179,
+      "message_count": 2,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 43.28290745399179,
+          "message_count": 2,
+          "keyword_density": 0.03389830508474576,
+          "keyword_counts": {
+            "propiedad intelectual": 2
+          }
+        }
+      },
+      "keyword_density": 0.03389830508474576,
+      "last_interaction": null,
+      "potential_score": 12.216062060871534,
+      "potential_level": "MUY BAJO"
+    },
+    "573212585695@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573212585695",
+      "total_score": 19.066666666666663,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 19.066666666666663,
+          "message_count": 1,
+          "keyword_density": 0.041666666666666664,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.041666666666666664,
+      "last_interaction": null,
+      "potential_score": 12.212666666666664,
+      "potential_level": "MUY BAJO"
+    },
+    "34636220312": {
+      "display_name": "34636220312",
+      "phone": "34636220312",
+      "total_score": 37.30916542473919,
+      "message_count": 2,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 37.30916542473919,
+          "message_count": 2,
+          "keyword_density": 0.03508771929824561,
+          "keyword_counts": {
+            "propiedad intelectual": 2
+          }
+        }
+      },
+      "keyword_density": 0.03508771929824561,
+      "last_interaction": null,
+      "potential_score": 12.15552451172641,
+      "potential_level": "MUY BAJO"
+    },
+    "573104046840@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573104046840",
+      "total_score": 20.272342369783733,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 20.272342369783733,
+          "message_count": 1,
+          "keyword_density": 0.04081632653061224,
+          "keyword_counts": {
+            "propiedad intelectual": 2
+          }
+        }
+      },
+      "keyword_density": 0.04081632653061224,
+      "last_interaction": null,
+      "potential_score": 12.133342674383185,
+      "potential_level": "MUY BAJO"
+    },
+    "573144790291": {
+      "display_name": "573144790291",
+      "phone": "573144790291",
+      "total_score": 18.747719298245613,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 18.747719298245613,
+          "message_count": 1,
+          "keyword_density": 0.04,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.04,
+      "last_interaction": null,
+      "potential_score": 11.949908771929824,
+      "potential_level": "MUY BAJO"
+    },
+    "573014516097@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "573014516097",
+      "total_score": 37.7012908764807,
+      "message_count": 2,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 37.7012908764807,
+          "message_count": 2,
+          "keyword_density": 0.031914893617021274,
+          "keyword_counts": {
+            "propiedad intelectual": 3
+          }
+        }
+      },
+      "keyword_density": 0.031914893617021274,
+      "last_interaction": null,
+      "potential_score": 11.69528567761242,
+      "potential_level": "MUY BAJO"
+    },
+    "34655169590@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "34655169590",
+      "total_score": 18.946042120551922,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 18.946042120551922,
+          "message_count": 1,
+          "keyword_density": 0.037037037037037035,
+          "keyword_counts": {
+            "musica": 1
+          }
+        }
+      },
+      "keyword_density": 0.037037037037037035,
+      "last_interaction": null,
+      "potential_score": 11.513397240377632,
+      "potential_level": "MUY BAJO"
+    },
+    "573023382529@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573023382529",
+      "total_score": 18.858211041229907,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 18.858211041229907,
+          "message_count": 1,
+          "keyword_density": 0.037037037037037035,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.037037037037037035,
+      "last_interaction": null,
+      "potential_score": 11.50988399720475,
+      "potential_level": "MUY BAJO"
+    },
+    "51949608125": {
+      "display_name": "51949608125",
+      "phone": "51949608125",
+      "total_score": 18.443079200592152,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 18.443079200592152,
+          "message_count": 1,
+          "keyword_density": 0.03571428571428571,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.03571428571428571,
+      "last_interaction": null,
+      "potential_score": 11.294866025166542,
+      "potential_level": "MUY BAJO"
+    },
+    "573207807486": {
+      "display_name": "573207807486",
+      "phone": "573207807486",
+      "total_score": 38.69264550424248,
+      "message_count": 2,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 38.69264550424248,
+          "message_count": 2,
+          "keyword_density": 0.028037383177570093,
+          "keyword_counts": {
+            "propiedad intelectual": 3
+          }
+        }
+      },
+      "keyword_density": 0.028037383177570093,
+      "last_interaction": null,
+      "potential_score": 11.153313296805214,
+      "potential_level": "MUY BAJO"
+    },
+    "573128053689@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573128053689",
+      "total_score": 58.58052553121999,
+      "message_count": 3,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 58.58052553121999,
+          "message_count": 3,
+          "keyword_density": 0.020477815699658702,
+          "keyword_counts": {
+            "propiedad intelectual": 6
+          }
+        }
+      },
+      "keyword_density": 0.020477815699658702,
+      "last_interaction": null,
+      "potential_score": 11.014893376197604,
+      "potential_level": "MUY BAJO"
+    },
+    "573104064440@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "573104064440",
+      "total_score": 105.9595659554405,
+      "message_count": 5,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 105.9595659554405,
+          "message_count": 5,
+          "keyword_density": 0.00418702023726448,
+          "keyword_counts": {
+            "musica": 2,
+            "propiedad intelectual": 4
+          }
+        }
+      },
+      "keyword_density": 0.00418702023726448,
+      "last_interaction": null,
+      "potential_score": 10.866435673807292,
+      "potential_level": "MUY BAJO"
+    },
+    "573206856447": {
+      "display_name": "573206856447",
+      "phone": "573206856447",
+      "total_score": 59.545035765605675,
+      "message_count": 3,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 59.545035765605675,
+          "message_count": 3,
+          "keyword_density": 0.01871657754010695,
+          "keyword_counts": {
+            "propiedad intelectual": 7
+          }
+        }
+      },
+      "keyword_density": 0.01871657754010695,
+      "last_interaction": null,
+      "potential_score": 10.789288061640269,
+      "potential_level": "MUY BAJO"
+    },
+    "573146376941@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "573146376941",
+      "total_score": 57.02559943748829,
+      "message_count": 3,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 57.02559943748829,
+          "message_count": 3,
+          "keyword_density": 0.019169329073482427,
+          "keyword_counts": {
+            "propiedad intelectual": 6
+          }
+        }
+      },
+      "keyword_density": 0.019169329073482427,
+      "last_interaction": null,
+      "potential_score": 10.756423338521897,
+      "potential_level": "MUY BAJO"
+    },
+    "573005272789@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573005272789",
+      "total_score": 18.300559701492535,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 18.300559701492535,
+          "message_count": 1,
+          "keyword_density": 0.03125,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.03125,
+      "last_interaction": null,
+      "potential_score": 10.6195223880597,
+      "potential_level": "MUY BAJO"
+    },
+    "573234717718@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573234717718",
+      "total_score": 18.234826526130874,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 18.234826526130874,
+          "message_count": 1,
+          "keyword_density": 0.030303030303030304,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.030303030303030304,
+      "last_interaction": null,
+      "potential_score": 10.47484760649978,
+      "potential_level": "MUY BAJO"
+    },
+    "573165781664": {
+      "display_name": "573165781664",
+      "phone": "573165781664",
+      "total_score": 17.975434674615002,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 17.975434674615002,
+          "message_count": 1,
+          "keyword_density": 0.030303030303030304,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.030303030303030304,
+      "last_interaction": null,
+      "potential_score": 10.464471932439146,
+      "potential_level": "MUY BAJO"
+    },
+    "573188584658": {
+      "display_name": "573188584658",
+      "phone": "573188584658",
+      "total_score": 52.858446337110564,
+      "message_count": 3,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 52.858446337110564,
+          "message_count": 3,
+          "keyword_density": 0.017964071856287425,
+          "keyword_counts": {
+            "propiedad intelectual": 3
+          }
+        }
+      },
+      "keyword_density": 0.017964071856287425,
+      "last_interaction": null,
+      "potential_score": 10.408948631927537,
+      "potential_level": "MUY BAJO"
+    },
+    "573146820829@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573146820829",
+      "total_score": 35.585916528773666,
+      "message_count": 2,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 35.585916528773666,
+          "message_count": 2,
+          "keyword_density": 0.023809523809523808,
+          "keyword_counts": {
+            "propiedad intelectual": 2
+          }
+        }
+      },
+      "keyword_density": 0.023809523809523808,
+      "last_interaction": null,
+      "potential_score": 10.394865232579518,
+      "potential_level": "MUY BAJO"
+    },
+    "573128717434@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573128717434",
+      "total_score": 18.326244343891403,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 18.326244343891403,
+          "message_count": 1,
+          "keyword_density": 0.029411764705882353,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.029411764705882353,
+      "last_interaction": null,
+      "potential_score": 10.344814479638007,
+      "potential_level": "MUY BAJO"
+    },
+    "593996186024": {
+      "display_name": "593996186024",
+      "phone": "593996186024",
+      "total_score": 18.272080772607552,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 18.272080772607552,
+          "message_count": 1,
+          "keyword_density": 0.029411764705882353,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.029411764705882353,
+      "last_interaction": null,
+      "potential_score": 10.342647936786655,
+      "potential_level": "MUY BAJO"
+    },
+    "573115322035@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573115322035",
+      "total_score": 36.271944424371995,
+      "message_count": 2,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 36.271944424371995,
+          "message_count": 2,
+          "keyword_density": 0.022988505747126436,
+          "keyword_counts": {
+            "propiedad intelectual": 2
+          }
+        }
+      },
+      "keyword_density": 0.022988505747126436,
+      "last_interaction": null,
+      "potential_score": 10.299153639043846,
+      "potential_level": "MUY BAJO"
+    },
+    "573169793258": {
+      "display_name": "573169793258",
+      "phone": "573169793258",
+      "total_score": 59.55893771962168,
+      "message_count": 3,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 59.55893771962168,
+          "message_count": 3,
+          "keyword_density": 0.015,
+          "keyword_counts": {
+            "propiedad intelectual": 3
+          }
+        }
+      },
+      "keyword_density": 0.015,
+      "last_interaction": null,
+      "potential_score": 10.232357508784867,
+      "potential_level": "MUY BAJO"
+    },
+    "573002897702@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573002897702",
+      "total_score": 35.32282956425813,
+      "message_count": 2,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 35.32282956425813,
+          "message_count": 2,
+          "keyword_density": 0.022222222222222223,
+          "keyword_counts": {
+            "propiedad intelectual": 2
+          }
+        }
+      },
+      "keyword_density": 0.022222222222222223,
+      "last_interaction": null,
+      "potential_score": 10.146246515903659,
+      "potential_level": "MUY BAJO"
+    },
+    "573015011898@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573015011898",
+      "total_score": 57.67787643259212,
+      "message_count": 3,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 57.67787643259212,
+          "message_count": 3,
+          "keyword_density": 0.014760147601476014,
+          "keyword_counts": {
+            "propiedad intelectual": 4
+          }
+        }
+      },
+      "keyword_density": 0.014760147601476014,
+      "last_interaction": null,
+      "potential_score": 10.121137197525087,
+      "potential_level": "MUY BAJO"
+    },
+    "573104066551@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "573104066551",
+      "total_score": 74.60947879879424,
+      "message_count": 4,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 74.60947879879424,
+          "message_count": 4,
+          "keyword_density": 0.008316008316008316,
+          "keyword_counts": {
+            "propiedad intelectual": 8
+          }
+        }
+      },
+      "keyword_density": 0.008316008316008316,
+      "last_interaction": null,
+      "potential_score": 10.031780399353018,
+      "potential_level": "MUY BAJO"
+    },
+    "120363146219285847@g.us": {
+      "display_name": "491797934039",
+      "phone": "120363146219285847",
+      "total_score": 35.17088923288613,
+      "message_count": 2,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 35.17088923288613,
+          "message_count": 2,
+          "keyword_density": 0.021052631578947368,
+          "keyword_counts": {
+            "propiedad intelectual": 2
+          }
+        }
+      },
+      "keyword_density": 0.021052631578947368,
+      "last_interaction": null,
+      "potential_score": 9.96473030615755,
+      "potential_level": "MUY BAJO"
+    },
+    "573113667320@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "573113667320",
+      "total_score": 54.709842884369365,
+      "message_count": 3,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 54.709842884369365,
+          "message_count": 3,
+          "keyword_density": 0.013192612137203167,
+          "keyword_counts": {
+            "propiedad intelectual": 5
+          }
+        }
+      },
+      "keyword_density": 0.013192612137203167,
+      "last_interaction": null,
+      "potential_score": 9.76728553595525,
+      "potential_level": "MUY BAJO"
+    },
+    "573168755530@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573168755530",
+      "total_score": 35.67473098330241,
+      "message_count": 2,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 35.67473098330241,
+          "message_count": 2,
+          "keyword_density": 0.019417475728155338,
+          "keyword_counts": {
+            "propiedad intelectual": 2
+          }
+        }
+      },
+      "keyword_density": 0.019417475728155338,
+      "last_interaction": null,
+      "potential_score": 9.739610598555396,
+      "potential_level": "MUY BAJO"
+    },
+    "573217346597": {
+      "display_name": "573217346597",
+      "phone": "573217346597",
+      "total_score": 34.93005916471422,
+      "message_count": 2,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 34.93005916471422,
+          "message_count": 2,
+          "keyword_density": 0.018867924528301886,
+          "keyword_counts": {
+            "propiedad intelectual": 2
+          }
+        }
+      },
+      "keyword_density": 0.018867924528301886,
+      "last_interaction": null,
+      "potential_score": 9.627391045833852,
+      "potential_level": "MUY BAJO"
+    },
+    "573206427198@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "573206427198",
+      "total_score": 60.083914071186925,
+      "message_count": 3,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 60.083914071186925,
+          "message_count": 3,
+          "keyword_density": 0.010825439783491205,
+          "keyword_counts": {
+            "propiedad intelectual": 8
+          }
+        }
+      },
+      "keyword_density": 0.010825439783491203,
+      "last_interaction": null,
+      "potential_score": 9.627172530371157,
+      "potential_level": "MUY BAJO"
+    },
+    "573137472426": {
+      "display_name": "573137472426",
+      "phone": "573137472426",
+      "total_score": 17.89731908889337,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 17.89731908889337,
+          "message_count": 1,
+          "keyword_density": 0.024390243902439025,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.024390243902439025,
+      "last_interaction": null,
+      "potential_score": 9.574429348921587,
+      "potential_level": "MUY BAJO"
+    },
+    "573015981450@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573015981450",
+      "total_score": 19.24867200406659,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 19.24867200406659,
+          "message_count": 1,
+          "keyword_density": 0.023255813953488372,
+          "keyword_counts": {
+            "propiedad intelectual": 2
+          }
+        }
+      },
+      "keyword_density": 0.023255813953488372,
+      "last_interaction": null,
+      "potential_score": 9.45831897318592,
+      "potential_level": "MUY BAJO"
+    },
+    "573106783500": {
+      "display_name": "573106783500",
+      "phone": "573106783500",
+      "total_score": 17.688283557597636,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 17.688283557597636,
+          "message_count": 1,
+          "keyword_density": 0.022727272727272728,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.022727272727272728,
+      "last_interaction": null,
+      "potential_score": 9.316622251394815,
+      "potential_level": "MUY BAJO"
+    },
+    "5214423302759": {
+      "display_name": "5214423302759",
+      "phone": "5214423302759",
+      "total_score": 17.44754452239611,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 17.44754452239611,
+          "message_count": 1,
+          "keyword_density": 0.0196078431372549,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.0196078431372549,
+      "last_interaction": null,
+      "potential_score": 8.839078251484079,
+      "potential_level": "MUY BAJO"
+    },
+    "573004097326": {
+      "display_name": "573004097326",
+      "phone": "573004097326",
+      "total_score": 20.919028443466644,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 20.919028443466644,
+          "message_count": 1,
+          "keyword_density": 0.017045454545454544,
+          "keyword_counts": {
+            "propiedad intelectual": 3
+          }
+        }
+      },
+      "keyword_density": 0.017045454545454544,
+      "last_interaction": null,
+      "potential_score": 8.593579319556847,
+      "potential_level": "MUY BAJO"
+    },
+    "573192914618@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573192914618",
+      "total_score": 57.388543953019436,
+      "message_count": 3,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 57.388543953019436,
+          "message_count": 3,
+          "keyword_density": 0.001709819247679531,
+          "keyword_counts": {
+            "propiedad intelectual": 7
+          }
+        }
+      },
+      "keyword_density": 0.001709819247679531,
+      "last_interaction": null,
+      "potential_score": 8.152014645272708,
+      "potential_level": "MUY BAJO"
+    },
+    "573017412488@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573017412488",
+      "total_score": 17.149872122762144,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 17.149872122762144,
+          "message_count": 1,
+          "keyword_density": 0.014705882352941176,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.014705882352941176,
+      "last_interaction": null,
+      "potential_score": 8.091877237851662,
+      "potential_level": "MUY BAJO"
+    },
+    "16463720433@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "16463720433",
+      "total_score": 17.068361916026017,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 17.068361916026017,
+          "message_count": 1,
+          "keyword_density": 0.013157894736842105,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.013157894736842105,
+      "last_interaction": null,
+      "potential_score": 7.8564186871673565,
+      "potential_level": "MUY BAJO"
+    },
+    "593984587777": {
+      "display_name": "593984587777",
+      "phone": "593984587777",
+      "total_score": 16.995307146840887,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 16.995307146840887,
+          "message_count": 1,
+          "keyword_density": 0.012987012987012988,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.012987012987012988,
+      "last_interaction": null,
+      "potential_score": 7.827864233925584,
+      "potential_level": "MUY BAJO"
+    },
+    "573044138831@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573044138831",
+      "total_score": 16.9271686336564,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 16.9271686336564,
+          "message_count": 1,
+          "keyword_density": 0.011494252873563218,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.011494252873563218,
+      "last_interaction": null,
+      "potential_score": 7.601224676380739,
+      "potential_level": "MUY BAJO"
+    },
+    "573124810826@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573124810826",
+      "total_score": 20.68921058120939,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 20.68921058120939,
+          "message_count": 1,
+          "keyword_density": 0.010452961672473868,
+          "keyword_counts": {
+            "propiedad intelectual": 3
+          }
+        }
+      },
+      "keyword_density": 0.010452961672473868,
+      "last_interaction": null,
+      "potential_score": 7.5955126741194565,
+      "potential_level": "MUY BAJO"
+    },
+    "51930276710": {
+      "display_name": "51930276710",
+      "phone": "51930276710",
+      "total_score": 16.801632724719102,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 16.801632724719102,
+          "message_count": 1,
+          "keyword_density": 0.011235955056179775,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.011235955056179775,
+      "last_interaction": null,
+      "potential_score": 7.557458567415731,
+      "potential_level": "MUY BAJO"
+    },
+    "491797934039@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "491797934039",
+      "total_score": 34.73303732186578,
+      "message_count": 2,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 34.73303732186578,
+          "message_count": 2,
+          "keyword_density": 0.004201680672268907,
+          "keyword_counts": {
+            "propiedad intelectual": 3
+          }
+        }
+      },
+      "keyword_density": 0.004201680672268907,
+      "last_interaction": null,
+      "potential_score": 7.419573593714968,
+      "potential_level": "MUY BAJO"
+    },
+    "5215544883079": {
+      "display_name": "5215544883079",
+      "phone": "5215544883079",
+      "total_score": 16.78317321502665,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 16.78317321502665,
+          "message_count": 1,
+          "keyword_density": 0.010309278350515464,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.010309278350515464,
+      "last_interaction": null,
+      "potential_score": 7.4177186811783855,
+      "potential_level": "MUY BAJO"
+    },
+    "573166973549": {
+      "display_name": "573166973549",
+      "phone": "573166973549",
+      "total_score": 16.73529169243455,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 16.73529169243455,
+          "message_count": 1,
+          "keyword_density": 0.009523809523809525,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.009523809523809525,
+      "last_interaction": null,
+      "potential_score": 7.297983096268811,
+      "potential_level": "MUY BAJO"
+    },
+    "573185146155@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573185146155",
+      "total_score": 16.752585085627572,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 16.752585085627572,
+          "message_count": 1,
+          "keyword_density": 0.008928571428571428,
+          "keyword_counts": {
+            "musica": 1
+          }
+        }
+      },
+      "keyword_density": 0.008928571428571428,
+      "last_interaction": null,
+      "potential_score": 7.209389117710817,
+      "potential_level": "MUY BAJO"
+    },
+    "573155892230@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573155892230",
+      "total_score": 18.51995913105601,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 18.51995913105601,
+          "message_count": 1,
+          "keyword_density": 0.0070921985815602835,
+          "keyword_counts": {
+            "propiedad intelectual": 2
+          }
+        }
+      },
+      "keyword_density": 0.0070921985815602835,
+      "last_interaction": null,
+      "potential_score": 7.0046281524762835,
+      "potential_level": "MUY BAJO"
+    },
+    "573004825175": {
+      "display_name": "573004825175",
+      "phone": "573004825175",
+      "total_score": 16.478944889307584,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 16.478944889307584,
+          "message_count": 1,
+          "keyword_density": 0.005681818181818182,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.005681818181818182,
+      "last_interaction": null,
+      "potential_score": 6.711430522845031,
+      "potential_level": "MUY BAJO"
+    },
+    "573137440468@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "573137440468",
+      "total_score": 18.4189927504921,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 18.4189927504921,
+          "message_count": 1,
+          "keyword_density": 0.005089058524173028,
+          "keyword_counts": {
+            "propiedad intelectual": 2
+          }
+        }
+      },
+      "keyword_density": 0.005089058524173028,
+      "last_interaction": null,
+      "potential_score": 6.700118488645638,
+      "potential_level": "MUY BAJO"
+    },
+    "573012656519@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573012656519",
+      "total_score": 16.471314328723302,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 16.471314328723302,
+          "message_count": 1,
+          "keyword_density": 0.005555555555555556,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.005555555555555556,
+      "last_interaction": null,
+      "potential_score": 6.6921859064822655,
+      "potential_level": "MUY BAJO"
+    },
+    "573015309191@s.whatsapp.net": {
+      "display_name": "Nombre del Chat",
+      "phone": "573015309191",
+      "total_score": 16.403007576631666,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 16.403007576631666,
+          "message_count": 1,
+          "keyword_density": 0.004672897196261682,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.004672897196261682,
+      "last_interaction": null,
+      "potential_score": 6.557054882504519,
+      "potential_level": "MUY BAJO"
+    },
+    "120363021674636850@g.us": {
+      "display_name": "573015309191",
+      "phone": "120363021674636850",
+      "total_score": 16.403007576631666,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 16.403007576631666,
+          "message_count": 1,
+          "keyword_density": 0.004672897196261682,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.004672897196261682,
+      "last_interaction": null,
+      "potential_score": 6.557054882504519,
+      "potential_level": "MUY BAJO"
+    },
+    "5218111773568": {
+      "display_name": "5218111773568",
+      "phone": "5218111773568",
+      "total_score": 16.21781597090582,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 16.21781597090582,
+          "message_count": 1,
+          "keyword_density": 0.0017271157167530224,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.0017271157167530224,
+      "last_interaction": null,
+      "potential_score": 6.107779996349186,
+      "potential_level": "MUY BAJO"
+    },
+    "573204549166@s.whatsapp.net": {
+      "display_name": "Yo",
+      "phone": "573204549166",
+      "total_score": 16.186078267474567,
+      "message_count": 1,
+      "categories": {
+        "musica, propiedad intelectual": {
+          "score": 16.186078267474567,
+          "message_count": 1,
+          "keyword_density": 0.0012468827930174563,
+          "keyword_counts": {
+            "propiedad intelectual": 1
+          }
+        }
+      },
+      "keyword_density": 0.0012468827930174563,
+      "last_interaction": null,
+      "potential_score": 6.034475549651601,
+      "potential_level": "MUY BAJO"
+    }
+  },
+  "categories": {
+    "musica, propiedad intelectual": [
+      "musica",
+      "propiedad intelectual"
+    ]
+  },
+  "analysis_date": "2025-05-05 01:14:23",
+  "filters": {
+    "start_date": null,
+    "end_date": null,
+    "min_score": 5.0
+  }
+}

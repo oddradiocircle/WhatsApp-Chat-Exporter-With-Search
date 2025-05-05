@@ -21,9 +21,10 @@ def calculate_relevance_score(message, keywords):
     - score: Puntuación de relevancia (0-100)
     - matched_keywords: Lista de palabras clave encontradas
     - keyword_counts: Diccionario con el conteo de cada palabra clave
+    - word_stats: Estadísticas adicionales sobre palabras (total, proporción, etc.)
     """
     if not message or not keywords:
-        return 0, [], {}
+        return 0, [], {}, {}
 
     message_lower = message.lower()
     matched_keywords = []
@@ -49,7 +50,16 @@ def calculate_relevance_score(message, keywords):
 
     # Si no hay coincidencias, devolver 0
     if not keyword_counts:
-        return 0, [], {}
+        return 0, [], {}, {}
+
+    # Contar palabras totales en el mensaje
+    total_words = len(re.findall(r'\b\w+\b', message_lower))
+
+    # Contar palabras clave totales
+    total_keywords = sum(keyword_counts.values())
+
+    # Calcular densidad de palabras clave (proporción de palabras clave vs palabras totales)
+    keyword_density = total_keywords / total_words if total_words > 0 else 0
 
     # Calcular puntuación base basada en el número de palabras clave encontradas
     base_score = min(100, (len(keyword_counts) / len(keywords)) * 100)
@@ -57,15 +67,26 @@ def calculate_relevance_score(message, keywords):
     # Ajustar por frecuencia de palabras clave
     frequency_score = min(100, sum(keyword_counts.values()) * 10)
 
+    # Ajustar por densidad de palabras clave (mensajes con mayor proporción de palabras clave son más relevantes)
+    density_score = min(100, keyword_density * 100)
+
     # Ajustar por longitud del mensaje (mensajes más cortos con palabras clave son más relevantes)
     length_factor = 1.0
     if len(message) > 0:
         length_factor = min(1.0, 50 / len(message))
 
-    # Calcular puntuación final
-    final_score = (base_score * 0.5 + frequency_score * 0.3) * (0.7 + length_factor * 0.3)
+    # Calcular puntuación final con el nuevo factor de densidad
+    final_score = (base_score * 0.4 + frequency_score * 0.3 + density_score * 0.2) * (0.7 + length_factor * 0.3)
 
-    return min(100, final_score), matched_keywords, keyword_counts
+    # Estadísticas adicionales para análisis de relevancia
+    word_stats = {
+        'total_words': total_words,
+        'total_keywords': total_keywords,
+        'keyword_density': keyword_density,
+        'unique_keywords': len(keyword_counts)
+    }
+
+    return min(100, final_score), matched_keywords, keyword_counts, word_stats
 
 def get_message_context(data, chat_id, msg_id, contacts=None, context_size=2):
     """
@@ -109,25 +130,66 @@ def get_message_context(data, chat_id, msg_id, contacts=None, context_size=2):
             sender_id = prev_msg.get('sender_id', '')
             from_me = prev_msg.get('from_me', False)
 
-            # Formatear número de teléfono
-            formatted_phone = format_phone_number(sender_id, contacts) if sender_id else "Desconocido"
+            # Verificar si hay un remitente resuelto previamente
+            if prev_msg.get('resolved_sender') and prev_msg.get('resolution_confidence', 0) > 50:
+                sender_name = prev_msg['resolved_sender']
 
-            # Mejorar la visualización del remitente con información de contactos
-            if contacts and sender_id:
-                # Extraer el número de teléfono del sender_id (eliminar @s.whatsapp.net)
-                phone_raw = sender_id.split('@')[0] if '@' in sender_id else sender_id
-                if phone_raw in contacts:
-                    contact_info = contacts[phone_raw]
-                    if contact_info.get('display_name'):
-                        sender_name = contact_info.get('display_name')
+            # Si no hay sender_id pero hay sender, usar sender como sender_id
+            if not sender_id and sender_name and sender_name != 'Desconocido':
+                sender_id = sender_name
 
+            # Si el sender_id es "None" o "Desconocido" como string, intentar inferirlo del contexto
+            if sender_id == "None" or sender_id == "Desconocido":
+                # En chats individuales, el remitente probablemente es el chat_id
+                if '-' not in chat_id:  # No es un grupo
+                    sender_id = chat_id
+
+            # Intentar usar el resolvedor avanzado si está disponible
+            try:
+                from contact_resolver import get_resolver
+                resolver = get_resolver(contacts_data=contacts, chat_data=data)
+                if resolver and sender_id:
+                    contact_info = resolver.resolve_contact(
+                        sender_id,
+                        context={"chat_id": chat_id, "message_id": prev_id}
+                    )
+                    if contact_info['confidence'] > 50:
+                        sender_name = contact_info['display_name']
+                        formatted_phone = contact_info['phone']
+                    else:
+                        # Formatear número de teléfono
+                        formatted_phone = format_phone_number(sender_id, contacts) if sender_id else "Desconocido"
+                else:
+                    # Formatear número de teléfono
+                    formatted_phone = format_phone_number(sender_id, contacts) if sender_id else "Desconocido"
+            except Exception:
+                # Si hay error con el resolvedor, usar el método tradicional
+                # Formatear número de teléfono
+                formatted_phone = format_phone_number(sender_id, contacts) if sender_id else "Desconocido"
+
+                # Mejorar la visualización del remitente con información de contactos (método tradicional)
+                if contacts and sender_id:
+                    # Extraer el número de teléfono del sender_id (eliminar @s.whatsapp.net)
+                    phone_raw = sender_id.split('@')[0] if '@' in sender_id else sender_id
+                    if phone_raw in contacts:
+                        contact_info = contacts[phone_raw]
+                        if contact_info.get('display_name'):
+                            sender_name = contact_info.get('display_name')
+
+            # Determinar qué mostrar para el remitente
             if from_me:
                 sender_display = "Yo"
             elif not sender_name or sender_name == "Desconocido":
-                if sender_id:
+                if sender_id and sender_id != "None" and sender_id != "Desconocido":
                     sender_display = formatted_phone
                 else:
-                    sender_display = "Desconocido"
+                    # Para chats individuales, usar el nombre del chat como último recurso
+                    chat_data = data.get(chat_id, {})
+                    chat_name = chat_data.get('name')
+                    if '-' not in chat_id and chat_name and chat_name != chat_id:
+                        sender_display = chat_name
+                    else:
+                        sender_display = "Desconocido"
             else:
                 sender_display = sender_name
 
@@ -160,25 +222,66 @@ def get_message_context(data, chat_id, msg_id, contacts=None, context_size=2):
             sender_id = next_msg.get('sender_id', '')
             from_me = next_msg.get('from_me', False)
 
-            # Formatear número de teléfono
-            formatted_phone = format_phone_number(sender_id, contacts) if sender_id else "Desconocido"
+            # Verificar si hay un remitente resuelto previamente
+            if next_msg.get('resolved_sender') and next_msg.get('resolution_confidence', 0) > 50:
+                sender_name = next_msg['resolved_sender']
 
-            # Mejorar la visualización del remitente con información de contactos
-            if contacts and sender_id:
-                # Extraer el número de teléfono del sender_id (eliminar @s.whatsapp.net)
-                phone_raw = sender_id.split('@')[0] if '@' in sender_id else sender_id
-                if phone_raw in contacts:
-                    contact_info = contacts[phone_raw]
-                    if contact_info.get('display_name'):
-                        sender_name = contact_info.get('display_name')
+            # Si no hay sender_id pero hay sender, usar sender como sender_id
+            if not sender_id and sender_name and sender_name != 'Desconocido':
+                sender_id = sender_name
 
+            # Si el sender_id es "None" o "Desconocido" como string, intentar inferirlo del contexto
+            if sender_id == "None" or sender_id == "Desconocido":
+                # En chats individuales, el remitente probablemente es el chat_id
+                if '-' not in chat_id:  # No es un grupo
+                    sender_id = chat_id
+
+            # Intentar usar el resolvedor avanzado si está disponible
+            try:
+                from contact_resolver import get_resolver
+                resolver = get_resolver(contacts_data=contacts, chat_data=data)
+                if resolver and sender_id:
+                    contact_info = resolver.resolve_contact(
+                        sender_id,
+                        context={"chat_id": chat_id, "message_id": next_id}
+                    )
+                    if contact_info['confidence'] > 50:
+                        sender_name = contact_info['display_name']
+                        formatted_phone = contact_info['phone']
+                    else:
+                        # Formatear número de teléfono
+                        formatted_phone = format_phone_number(sender_id, contacts) if sender_id else "Desconocido"
+                else:
+                    # Formatear número de teléfono
+                    formatted_phone = format_phone_number(sender_id, contacts) if sender_id else "Desconocido"
+            except Exception:
+                # Si hay error con el resolvedor, usar el método tradicional
+                # Formatear número de teléfono
+                formatted_phone = format_phone_number(sender_id, contacts) if sender_id else "Desconocido"
+
+                # Mejorar la visualización del remitente con información de contactos (método tradicional)
+                if contacts and sender_id:
+                    # Extraer el número de teléfono del sender_id (eliminar @s.whatsapp.net)
+                    phone_raw = sender_id.split('@')[0] if '@' in sender_id else sender_id
+                    if phone_raw in contacts:
+                        contact_info = contacts[phone_raw]
+                        if contact_info.get('display_name'):
+                            sender_name = contact_info.get('display_name')
+
+            # Determinar qué mostrar para el remitente
             if from_me:
                 sender_display = "Yo"
             elif not sender_name or sender_name == "Desconocido":
-                if sender_id:
+                if sender_id and sender_id != "None" and sender_id != "Desconocido":
                     sender_display = formatted_phone
                 else:
-                    sender_display = "Desconocido"
+                    # Para chats individuales, usar el nombre del chat como último recurso
+                    chat_data = data.get(chat_id, {})
+                    chat_name = chat_data.get('name')
+                    if '-' not in chat_id and chat_name and chat_name != chat_id:
+                        sender_display = chat_name
+                    else:
+                        sender_display = "Desconocido"
             else:
                 sender_display = sender_name
 
@@ -240,20 +343,20 @@ def extract_messages(data, contacts=None, chat_filter=None, start_date=None, end
     for chat_id, chat_data in data.items():
         # Extraer el número de teléfono limpio del chat_id para buscar en contactos
         chat_phone_raw = chat_id.split('@')[0] if '@' in chat_id else chat_id
-        
+
         # Obtener nombre del chat
         chat_name = None
-        
+
         # Primero intentar buscar directamente en los contactos
         if contacts and chat_phone_raw in contacts:
             contact_info = contacts[chat_phone_raw]
             if contact_info.get('display_name'):
                 chat_name = contact_info.get('display_name')
-        
+
         # Si no se encontró nombre en los contactos, usar el nombre guardado en los datos
         if not chat_name:
             chat_name = chat_data.get('name', chat_id)
-            
+
             # Si el nombre sigue siendo el chat_id, intentar formatear el número
             if chat_name == chat_id:
                 chat_name = format_phone_number(chat_id, contacts)
@@ -305,13 +408,23 @@ def extract_messages(data, contacts=None, chat_filter=None, start_date=None, end
             sender_id = message.get('sender_id', '')
             from_me = message.get('from_me', False)
 
+            # Verificar si hay un remitente resuelto previamente
+            if message.get('resolved_sender') and message.get('resolution_confidence', 0) > 50:
+                sender_name = message['resolved_sender']
+
             # Si no hay sender_id pero hay sender, usar sender como sender_id
             if not sender_id and sender_name and sender_name != 'Desconocido':
                 sender_id = sender_name
 
+            # Si el sender_id es "None" o "Desconocido" como string, intentar inferirlo del contexto
+            if sender_id == "None" or sender_id == "Desconocido":
+                # En chats individuales, el remitente probablemente es el chat_id
+                if '-' not in chat_id:  # No es un grupo
+                    sender_id = chat_id
+
             # Extraer número de teléfono limpio del sender_id
             sender_phone_raw = sender_id.split('@')[0] if sender_id and '@' in sender_id else sender_id
-            
+
             # Buscar nombre del remitente en los contactos
             contact_name = None
             if contacts and sender_phone_raw and sender_phone_raw in contacts:
@@ -319,20 +432,45 @@ def extract_messages(data, contacts=None, chat_filter=None, start_date=None, end
                 if contact_info.get('display_name'):
                     contact_name = contact_info.get('display_name')
                     sender_name = contact_name
-            
-            # Formatear número de teléfono
-            formatted_phone = format_phone_number(sender_id, contacts) if sender_id else "Desconocido"
 
+            # Intentar usar el resolvedor avanzado si está disponible
+            try:
+                from contact_resolver import get_resolver
+                resolver = get_resolver(contacts_data=contacts, chat_data=data)
+                if resolver and sender_id:
+                    contact_info = resolver.resolve_contact(
+                        sender_id,
+                        context={"chat_id": chat_id, "message_id": msg_id}
+                    )
+                    if contact_info['confidence'] > 50:
+                        sender_name = contact_info['display_name']
+                        formatted_phone = contact_info['phone']
+                        contact_name = sender_name
+                    else:
+                        # Formatear número de teléfono
+                        formatted_phone = format_phone_number(sender_id, contacts) if sender_id else "Desconocido"
+                else:
+                    # Formatear número de teléfono
+                    formatted_phone = format_phone_number(sender_id, contacts) if sender_id else "Desconocido"
+            except Exception:
+                # Si hay error con el resolvedor, usar el método tradicional
+                formatted_phone = format_phone_number(sender_id, contacts) if sender_id else "Desconocido"
+
+            # Determinar qué mostrar para el remitente
             if from_me:
                 sender_display = "Yo"
             elif contact_name:
                 # Si tenemos un nombre de contacto, usarlo
                 sender_display = contact_name
             elif not sender_name or sender_name == "Desconocido":
-                if sender_id:
+                if sender_id and sender_id != "None" and sender_id != "Desconocido":
                     sender_display = formatted_phone
                 else:
-                    sender_display = "Desconocido"
+                    # Para chats individuales, usar el nombre del chat como último recurso
+                    if '-' not in chat_id and chat_name and chat_name != chat_id:
+                        sender_display = chat_name
+                    else:
+                        sender_display = "Desconocido"
             else:
                 sender_display = sender_name
 

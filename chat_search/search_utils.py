@@ -17,18 +17,57 @@ def print_results(results, show_context=True, contacts=None):
     - show_context: Si se deben mostrar mensajes de contexto
     - contacts: Diccionario de contactos (opcional)
     """
-    # Verificar si results es un diccionario con resultados y relevancia de contactos
-    if isinstance(results, dict) and 'results' in results:
-        results = results['results']
+    # Extraer componentes si results es un diccionario
+    contact_relevance = None
+    chat_relevance = None
+    most_relevant_contact = None
 
-    if not results:
+    if isinstance(results, dict) and 'results' in results:
+        message_results = results['results']
+        if 'contact_relevance' in results:
+            contact_relevance = results['contact_relevance']
+        if 'chat_relevance' in results:
+            chat_relevance = results['chat_relevance']
+        if 'most_relevant_contact' in results:
+            most_relevant_contact = results['most_relevant_contact']
+    else:
+        message_results = results
+
+    if not message_results:
         print("No se encontraron mensajes coincidentes.")
         return
 
-    print(f"\nSe encontraron {len(results)} mensajes coincidentes:\n")
+    # Mostrar el contacto más relevante si está disponible
+    if most_relevant_contact:
+        contact_id, contact_data = most_relevant_contact
+        print("\n" + "=" * 80)
+        print(f"CONTACTO MÁS RELEVANTE: {contact_data['display_name']} ({contact_data['phone']})")
+        print(f"Puntuación total: {contact_data['score']:.1f}")
+        print(f"Mensajes coincidentes: {contact_data['message_count']}")
+        print(f"Densidad de palabras clave: {contact_data['keyword_density']:.2%}")
 
-    for i, result in enumerate(results, 1):
-        print(f"Resultado {i}" + (f" (Puntuación: {result.get('score', 0):.1f})" if 'score' in result else "") + ":")
+        # Mostrar palabras clave más frecuentes para este contacto
+        if contact_data['keyword_counts']:
+            sorted_keywords = sorted(contact_data['keyword_counts'].items(), key=lambda x: x[1], reverse=True)
+            print("Palabras clave más frecuentes:")
+            for keyword, count in sorted_keywords[:5]:  # Mostrar las 5 más frecuentes
+                print(f"  - {keyword}: {count} veces")
+        print("=" * 80 + "\n")
+
+    print(f"\nSe encontraron {len(message_results)} mensajes coincidentes.")
+
+    # Iniciar navegación interactiva
+    current_index = 0
+    page_size = 1  # Mostrar un resultado a la vez para mejor navegación
+
+    while True:
+        # Limpiar pantalla para mejor visualización
+        print("\n" + "=" * 80)
+        print(f"Resultado {current_index + 1} de {len(message_results)}")
+        print("=" * 80)
+
+        # Obtener el resultado actual
+        result = message_results[current_index]
 
         # Mostrar información del chat
         chat_name = result.get('chat_name', "")
@@ -65,11 +104,17 @@ def print_results(results, show_context=True, contacts=None):
                 print(f"Remitente: {phone_info}")
 
         print(f"Fecha: {result['date']}")
+        print(f"Puntuación: {result.get('score', 0):.1f}")
 
         if 'matched_keywords' in result:
             print(f"Palabras clave coincidentes: {', '.join(result['matched_keywords'])}")
 
-        print(f"Mensaje: {result['message']}")
+        # Mostrar estadísticas de palabras si están disponibles
+        if 'word_stats' in result:
+            stats = result['word_stats']
+            print(f"Densidad de palabras clave: {stats['keyword_density']:.2%} ({stats['total_keywords']} de {stats['total_words']} palabras)")
+
+        print(f"\nMensaje: {result['message']}")
 
         if show_context and 'context' in result and result['context']:
             print("\nContexto:")
@@ -92,13 +137,64 @@ def print_results(results, show_context=True, contacts=None):
 
                 print(f"  {prefix}[{ctx['date']}] {ctx_sender}: {ctx['message']}")
 
-        print("\n" + "-" * 80 + "\n")
+        # Mostrar opciones de navegación
+        print("\n" + "-" * 80)
+        print("Navegación: [p]revio | [s]iguiente | [c]ontactos | [r]esumen | [q]salir")
 
-    # No mostrar relevancia de contactos
-    # Esto se ha eliminado para mantener la salida limpia y enfocada solo en los mensajes
+        choice = input("Opción: ").lower()
 
-    # No mostrar relevancia de chats
-    # Esto se ha eliminado para mantener la salida limpia y enfocada solo en los mensajes
+        if choice == 'p':
+            # Ir al resultado anterior
+            current_index = max(0, current_index - 1)
+        elif choice == 's':
+            # Ir al siguiente resultado
+            current_index = min(len(message_results) - 1, current_index + 1)
+        elif choice == 'c' and contact_relevance:
+            # Mostrar relevancia de contactos
+            print("\n" + "=" * 80)
+            print("RELEVANCIA DE CONTACTOS")
+            print("=" * 80)
+
+            for i, (contact_id, data) in enumerate(contact_relevance[:10], 1):  # Mostrar los 10 más relevantes
+                print(f"{i}. {data['display_name']} ({data['phone']})")
+                print(f"   Puntuación: {data['score']:.1f} | Mensajes: {data['message_count']} | Densidad: {data.get('keyword_density', 0):.2%}")
+
+                # Mostrar palabras clave más frecuentes
+                if data['keyword_counts']:
+                    sorted_keywords = sorted(data['keyword_counts'].items(), key=lambda x: x[1], reverse=True)
+                    keywords_str = ", ".join([f"{k} ({v})" for k, v in sorted_keywords[:3]])
+                    print(f"   Palabras clave: {keywords_str}")
+
+                print()
+
+            input("Presiona Enter para continuar...")
+        elif choice == 'r':
+            # Mostrar resumen de resultados
+            print("\n" + "=" * 80)
+            print("RESUMEN DE RESULTADOS")
+            print("=" * 80)
+
+            # Mostrar distribución de resultados por chat
+            if chat_relevance:
+                print("\nDistribución por chat:")
+                for i, (chat_id, data) in enumerate(chat_relevance[:5], 1):
+                    print(f"{i}. {data['display_name']}: {data['message_count']} mensajes")
+
+            # Mostrar distribución por contacto
+            if contact_relevance:
+                print("\nDistribución por contacto:")
+                for i, (contact_id, data) in enumerate(contact_relevance[:5], 1):
+                    print(f"{i}. {data['display_name']}: {data['message_count']} mensajes")
+
+            input("\nPresiona Enter para continuar...")
+        elif choice == 'q':
+            # Salir de la navegación
+            break
+        else:
+            # Opción no válida
+            print("Opción no válida. Intenta de nuevo.")
+
+    print("\nBúsqueda finalizada.")
 
 def save_results_to_file(results, filename, contacts=None):
     """

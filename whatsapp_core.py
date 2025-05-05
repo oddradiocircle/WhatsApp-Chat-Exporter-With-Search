@@ -63,7 +63,7 @@ def format_phone_number(phone, contacts=None, data=None, context=None):
     """
     Formatea un número de teléfono para hacerlo más legible.
     Si se proporcionan contactos, intenta encontrar el nombre del contacto.
-    
+
     Versión mejorada que usa el ContactResolver si está disponible.
 
     Parámetros:
@@ -80,7 +80,7 @@ def format_phone_number(phone, contacts=None, data=None, context=None):
         try:
             resolver = get_resolver(contacts_data=contacts, chat_data=data)
             result = resolver.resolve_contact(
-                phone, 
+                phone,
                 context=context or {},
                 fallback="Desconocido"
             )
@@ -89,7 +89,7 @@ def format_phone_number(phone, contacts=None, data=None, context=None):
             # En caso de error, usar la implementación original
             print(f"Error en resolución avanzada: {e}")
             pass
-    
+
     # Implementación original para compatibilidad
     if not phone or not isinstance(phone, str):
         return "Desconocido"
@@ -100,11 +100,11 @@ def format_phone_number(phone, contacts=None, data=None, context=None):
 
     # Extraer el número de teléfono (eliminar @s.whatsapp.net)
     phone_raw = phone.split('@')[0] if '@' in phone else phone
-    
+
     # Extraer el número de teléfono (eliminar -grupo)
     if '-' in phone_raw:
         # Si es un grupo, extraer solo el número de creador del grupo
-        phone_raw = phone_raw.split('-')[0] 
+        phone_raw = phone_raw.split('-')[0]
 
     # Limpiar el número para comparación
     clean_phone = ''.join(c for c in phone_raw if c.isdigit())
@@ -155,36 +155,36 @@ def format_phone_number(phone, contacts=None, data=None, context=None):
     elif len(clean_phone) > 13:  # Probablemente tiene dígitos extra
         # Usar los últimos 12-13 dígitos (típicamente código de país + número)
         clean_phone = clean_phone[-13:]
-    
-    # Formatear uniformemente 
+
+    # Formatear uniformemente
     # Formato: +XX XXX XXX-XXXX
     if len(clean_phone) >= 10:
         # Extraer las partes
         country_code = clean_phone[:-10]
         if not country_code:
             country_code = "52"  # Default para México, ajustar según necesidad
-        
+
         area_code = clean_phone[-10:-7]
         first_part = clean_phone[-7:-4]
         last_part = clean_phone[-4:]
-        
+
         formatted_number = f"+{country_code} {area_code} {first_part}-{last_part}"
     else:
         formatted_number = f"+{clean_phone}"
-    
+
     return formatted_number
 
 # Nuevas funciones para aprovechar más capacidades del resolvedor
 def get_contact_info(identifier, contacts=None, data=None, context=None):
     """
     Versión extendida que devuelve información completa del contacto.
-    
+
     Parámetros:
     - identifier: Identificador del contacto (número, ID, etc.)
     - contacts: Diccionario de contactos
     - data: Datos de WhatsApp
     - context: Información de contexto
-    
+
     Retorna:
     - Dict con información detallada del contacto
     """
@@ -203,12 +203,12 @@ def get_contact_info(identifier, contacts=None, data=None, context=None):
 def suggest_chat_name(chat_id, contacts=None, data=None):
     """
     Sugiere un nombre para un chat sin nombre (None).
-    
+
     Parámetros:
     - chat_id: ID del chat
     - contacts: Diccionario de contactos
     - data: Datos de WhatsApp
-    
+
     Retorna:
     - Nombre sugerido para el chat
     """
@@ -222,50 +222,262 @@ def suggest_chat_name(chat_id, contacts=None, data=None):
 def resolve_unknown_participants(data, contacts=None, threshold=50):
     """
     Procesa todos los chats y resuelve participantes desconocidos.
-    
+
     Parámetros:
     - data: Datos de WhatsApp
     - contacts: Diccionario de contactos
     - threshold: Umbral de confianza mínimo para aceptar resoluciones
-    
+
     Retorna:
     - Datos procesados con resoluciones
     """
     if not data or not contacts:
         return data
-        
+
     try:
         # Inicializar el resolvedor
         resolver = get_resolver(contacts_data=contacts, chat_data=data)
-        
+
         # Procesar nombres de chats
         for chat_id, chat_info in data.items():
             if not chat_info.get('name') or chat_info.get('name') == "None":
                 suggested_name = resolver.suggest_chat_name(chat_id)
                 chat_info['suggested_name'] = suggested_name
-        
+
         # Procesar remitentes desconocidos
         for chat_id, chat_info in data.items():
             messages = chat_info.get('messages', {})
-            
+
             for msg_id, msg in messages.items():
                 sender_id = msg.get('sender_id', '')
-                
-                if sender_id and (not msg.get('sender') or msg.get('sender') == "Desconocido"):
+                sender_name = msg.get('sender', '')
+
+                # Procesar casos donde el sender_id o sender son problemáticos
+                if (sender_id == "None" or sender_id == "Desconocido" or not sender_id) and '-' not in chat_id:
+                    # En chats individuales, el remitente probablemente es el chat_id
+                    msg['sender_id'] = chat_id
+                    sender_id = chat_id
+
+                # Resolver remitentes desconocidos
+                if sender_id and (not sender_name or sender_name == "Desconocido" or sender_name == "None"):
                     # Usar contexto del chat actual
                     contact_info = resolver.resolve_contact(
                         sender_id,
-                        context={"chat_id": chat_id}
+                        context={"chat_id": chat_id, "message_id": msg_id}
                     )
-                    
+
                     if contact_info['confidence'] > threshold:
                         msg['resolved_sender'] = contact_info['display_name']
                         msg['resolution_confidence'] = contact_info['confidence']
                         msg['resolution_source'] = contact_info['source']
+                        # Actualizar también el campo sender para compatibilidad
+                        msg['sender'] = contact_info['display_name']
     except Exception as e:
         print(f"Error procesando participantes desconocidos: {e}")
-    
+
     return data
+
+def preprocess_data_for_search(data, contacts=None):
+    """
+    Preprocesa los datos para mejorar la búsqueda, resolviendo contactos desconocidos
+    y corrigiendo problemas comunes.
+
+    Parámetros:
+    - data: Datos de WhatsApp
+    - contacts: Diccionario de contactos
+
+    Retorna:
+    - Datos preprocesados
+    """
+    if not data:
+        return data
+
+    # Hacer una copia para no modificar los originales
+    import copy
+    processed_data = copy.deepcopy(data)
+
+    # Resolver participantes desconocidos con un umbral bajo para capturar más casos
+    processed_data = resolve_unknown_participants(processed_data, contacts, threshold=30)
+
+    # Aplicar correcciones manuales si existen
+    processed_data = apply_manual_corrections(processed_data)
+
+    # Procesar casos especiales
+    for chat_id, chat_info in processed_data.items():
+        messages = chat_info.get('messages', {})
+
+        # Verificar si es un chat individual
+        is_individual = '-' not in chat_id
+
+        # Obtener nombre del chat
+        chat_name = chat_info.get('name', '')
+        if not chat_name or chat_name == "None":
+            chat_name = chat_info.get('suggested_name', '')
+
+        # Para chats individuales, asegurarse de que los mensajes entrantes tengan el remitente correcto
+        if is_individual:
+            for msg_id, msg in messages.items():
+                from_me = msg.get('from_me', False)
+
+                # Si el mensaje es entrante y tiene problemas con el remitente
+                if not from_me:
+                    sender = msg.get('sender', '')
+                    sender_id = msg.get('sender_id', '')
+
+                    if (not sender or sender == "Desconocido" or sender == "None" or
+                        not sender_id or sender_id == "Desconocido" or sender_id == "None"):
+
+                        # Usar el chat_id como sender_id
+                        msg['sender_id'] = chat_id
+
+                        # Usar el nombre del chat como sender si está disponible
+                        if chat_name and chat_name != chat_id and chat_name != "None":
+                            msg['sender'] = chat_name
+                        else:
+                            # Formatear el número de teléfono
+                            msg['sender'] = format_phone_number(chat_id, contacts)
+
+    return processed_data
+
+def apply_manual_corrections(data):
+    """
+    Aplica correcciones manuales a los datos basados en un archivo de correcciones.
+
+    Parámetros:
+    - data: Datos de WhatsApp
+
+    Retorna:
+    - Datos con correcciones aplicadas
+    """
+    import os
+    import json
+
+    # Verificar si existe el archivo de correcciones
+    corrections_file = "contact_corrections.json"
+    if not os.path.exists(corrections_file):
+        # Crear un archivo de correcciones de ejemplo si no existe
+        example_corrections = {
+            "unknown_contacts": {
+                # Ejemplo: "5512345678@s.whatsapp.net": "Nombre Correcto"
+            },
+            "unknown_chats": {
+                # Ejemplo: "5512345678@s.whatsapp.net": "Nombre del Chat"
+            }
+        }
+        try:
+            with open(corrections_file, 'w', encoding='utf-8') as f:
+                json.dump(example_corrections, f, indent=4, ensure_ascii=False)
+            print(f"Se ha creado un archivo de correcciones de ejemplo: {corrections_file}")
+        except Exception as e:
+            print(f"Error al crear archivo de correcciones: {e}")
+        return data
+
+    # Cargar correcciones
+    try:
+        with open(corrections_file, 'r', encoding='utf-8') as f:
+            corrections = json.load(f)
+
+        # Aplicar correcciones a contactos desconocidos
+        unknown_contacts = corrections.get('unknown_contacts', {})
+        unknown_chats = corrections.get('unknown_chats', {})
+
+        # Corregir nombres de chats
+        for chat_id, chat_info in data.items():
+            # Aplicar corrección si existe
+            if chat_id in unknown_chats:
+                chat_info['name'] = unknown_chats[chat_id]
+                chat_info['corrected_name'] = True
+
+            # Corregir remitentes desconocidos en mensajes
+            messages = chat_info.get('messages', {})
+            for msg_id, msg in messages.items():
+                sender_id = msg.get('sender_id', '')
+
+                # Aplicar corrección si existe
+                if sender_id in unknown_contacts:
+                    msg['sender'] = unknown_contacts[sender_id]
+                    msg['corrected_sender'] = True
+
+        print(f"Se aplicaron {len(unknown_contacts)} correcciones de contactos y {len(unknown_chats)} correcciones de chats.")
+    except Exception as e:
+        print(f"Error al aplicar correcciones manuales: {e}")
+
+    return data
+
+def create_corrections_file(data, contacts=None):
+    """
+    Crea o actualiza un archivo de correcciones con contactos y chats desconocidos.
+
+    Parámetros:
+    - data: Datos de WhatsApp
+    - contacts: Diccionario de contactos
+
+    Retorna:
+    - True si se creó correctamente, False en caso contrario
+    """
+    import os
+    import json
+
+    corrections_file = "contact_corrections.json"
+    existing_corrections = {}
+
+    # Cargar correcciones existentes si el archivo existe
+    if os.path.exists(corrections_file):
+        try:
+            with open(corrections_file, 'r', encoding='utf-8') as f:
+                existing_corrections = json.load(f)
+        except Exception as e:
+            print(f"Error al cargar archivo de correcciones existente: {e}")
+            return False
+
+    # Inicializar diccionarios si no existen
+    if 'unknown_contacts' not in existing_corrections:
+        existing_corrections['unknown_contacts'] = {}
+    if 'unknown_chats' not in existing_corrections:
+        existing_corrections['unknown_chats'] = {}
+
+    # Encontrar chats y contactos desconocidos
+    unknown_chats = []
+    unknown_contacts = []
+
+    for chat_id, chat_info in data.items():
+        # Verificar si el chat tiene nombre desconocido
+        chat_name = chat_info.get('name', '')
+        if not chat_name or chat_name == "None" or chat_name == "Desconocido":
+            # Solo añadir si no existe ya en las correcciones
+            if chat_id not in existing_corrections['unknown_chats']:
+                unknown_chats.append(chat_id)
+
+        # Buscar remitentes desconocidos en mensajes
+        messages = chat_info.get('messages', {})
+        for msg_id, msg in messages.items():
+            sender = msg.get('sender', '')
+            sender_id = msg.get('sender_id', '')
+
+            if sender_id and (not sender or sender == "Desconocido" or sender == "None"):
+                # Solo añadir si no existe ya en las correcciones
+                if sender_id not in existing_corrections['unknown_contacts'] and sender_id not in unknown_contacts:
+                    unknown_contacts.append(sender_id)
+
+    # Actualizar correcciones con nuevos desconocidos
+    for chat_id in unknown_chats:
+        if chat_id not in existing_corrections['unknown_chats']:
+            existing_corrections['unknown_chats'][chat_id] = "Nombre del Chat"
+
+    for sender_id in unknown_contacts:
+        if sender_id not in existing_corrections['unknown_contacts']:
+            existing_corrections['unknown_contacts'][sender_id] = "Nombre del Contacto"
+
+    # Guardar correcciones actualizadas
+    try:
+        with open(corrections_file, 'w', encoding='utf-8') as f:
+            json.dump(existing_corrections, f, indent=4, ensure_ascii=False)
+        print(f"Se ha actualizado el archivo de correcciones: {corrections_file}")
+        print(f"Se añadieron {len(unknown_chats)} chats desconocidos y {len(unknown_contacts)} contactos desconocidos.")
+        return True
+    except Exception as e:
+        print(f"Error al guardar archivo de correcciones: {e}")
+        return False
 
 def calculate_relevance_score(message, keywords):
     """
@@ -328,7 +540,7 @@ def calculate_relevance_score(message, keywords):
 def get_message_context(data, chat_id, msg_id, contacts=None, context_size=2):
     """
     Obtiene mensajes de contexto (anteriores y siguientes) para un mensaje dado.
-    
+
     Versión mejorada para usar el ContactResolver cuando esté disponible.
 
     Parámetros:
@@ -342,7 +554,7 @@ def get_message_context(data, chat_id, msg_id, contacts=None, context_size=2):
     - context: Lista de mensajes de contexto
     """
     context = []
-    
+
     # Inicializar resolvedor si hay contactos disponibles
     resolver = None
     if contacts:
@@ -380,7 +592,7 @@ def get_message_context(data, chat_id, msg_id, contacts=None, context_size=2):
             # Usar el resolvedor avanzado si está disponible
             if resolver and sender_id:
                 contact_info = resolver.resolve_contact(
-                    sender_id, 
+                    sender_id,
                     context={"chat_id": chat_id, "message_id": prev_id}
                 )
                 if contact_info['confidence'] > 50:
@@ -389,7 +601,7 @@ def get_message_context(data, chat_id, msg_id, contacts=None, context_size=2):
             else:
                 # Formatear número de teléfono con método tradicional
                 formatted_phone = format_phone_number(sender_id, contacts) if sender_id else "Desconocido"
-                
+
                 # Mejorar la visualización del remitente con información de contactos (método tradicional)
                 if contacts and sender_id:
                     phone_raw = sender_id.split('@')[0] if '@' in sender_id else sender_id
@@ -441,7 +653,7 @@ def get_message_context(data, chat_id, msg_id, contacts=None, context_size=2):
             # Usar el resolvedor avanzado si está disponible
             if resolver and sender_id:
                 contact_info = resolver.resolve_contact(
-                    sender_id, 
+                    sender_id,
                     context={"chat_id": chat_id, "message_id": next_id}
                 )
                 if contact_info['confidence'] > 50:
@@ -450,7 +662,7 @@ def get_message_context(data, chat_id, msg_id, contacts=None, context_size=2):
             else:
                 # Formatear número de teléfono de manera tradicional
                 formatted_phone = format_phone_number(sender_id, contacts) if sender_id else "Desconocido"
-                
+
                 # Mejorar la visualización del remitente con información de contactos (método tradicional)
                 if contacts and sender_id:
                     phone_raw = sender_id.split('@')[0] if '@' in sender_id else sender_id
@@ -493,7 +705,7 @@ def get_message_context(data, chat_id, msg_id, contacts=None, context_size=2):
 def extract_messages(data, contacts=None, chat_filter=None, start_date=None, end_date=None, sender_filter=None, phone_filter=None):
     """
     Extrae mensajes de WhatsApp con varios filtros.
-    
+
     Versión mejorada para usar el ContactResolver cuando esté disponible.
 
     Parámetros:
@@ -509,11 +721,11 @@ def extract_messages(data, contacts=None, chat_filter=None, start_date=None, end
     - all_messages: Lista de mensajes que coinciden con los filtros
     """
     all_messages = []
-    
+
     # Variables para filtrado por fecha
     start_timestamp = None
     end_timestamp = None
-    
+
     # Inicializar resolvedor si hay contactos disponibles
     resolver = None
     if contacts:
@@ -521,7 +733,7 @@ def extract_messages(data, contacts=None, chat_filter=None, start_date=None, end
             resolver = get_resolver(contacts_data=contacts, chat_data=data)
         except Exception as e:
             print(f"Error al inicializar resolvedor: {e}")
-    
+
     # Convertir fechas a timestamps si se proporcionan
     if start_date:
         try:
@@ -541,24 +753,24 @@ def extract_messages(data, contacts=None, chat_filter=None, start_date=None, end
     for chat_id, chat_data in data.items():
         # Extraer el número de teléfono limpio del chat_id para buscar en contactos
         chat_phone_raw = chat_id.split('@')[0] if '@' in chat_id else chat_id
-        
+
         # Obtener nombre del chat usando el resolvedor avanzado si está disponible
         if resolver:
             chat_name = resolver.suggest_chat_name(chat_id)
         else:
             # Usar la lógica original para mantener compatibilidad
             chat_name = None
-            
+
             # Primero intentar buscar directamente en los contactos
             if contacts and chat_phone_raw in contacts:
                 contact_info = contacts[chat_phone_raw]
                 if contact_info.get('display_name'):
                     chat_name = contact_info.get('display_name')
-            
+
             # Si no se encontró nombre en los contactos, usar el nombre guardado en los datos
             if not chat_name:
                 chat_name = chat_data.get('name', chat_id)
-                
+
                 # Si el nombre sigue siendo el chat_id, intentar formatear el número
                 if chat_name == chat_id:
                     chat_name = format_phone_number(chat_id, contacts)
@@ -609,7 +821,7 @@ def extract_messages(data, contacts=None, chat_filter=None, start_date=None, end
             sender_name = message.get('sender', 'Desconocido')
             sender_id = message.get('sender_id', '')
             from_me = message.get('from_me', False)
-            
+
             # Intentar usar el remitente resuelto previamente
             if message.get('resolved_sender') and message.get('resolution_confidence', 0) > 50:
                 sender_name = message['resolved_sender']
@@ -621,7 +833,7 @@ def extract_messages(data, contacts=None, chat_filter=None, start_date=None, end
             # Si tenemos un resolvedor, intentar resolver el remitente
             if resolver and sender_id and (sender_name == 'Desconocido' or sender_name == sender_id):
                 contact_info = resolver.resolve_contact(
-                    sender_id, 
+                    sender_id,
                     context={"chat_id": chat_id, "message_id": msg_id}
                 )
                 if contact_info['confidence'] > 50:
@@ -630,12 +842,12 @@ def extract_messages(data, contacts=None, chat_filter=None, start_date=None, end
             else:
                 # Formatear número de teléfono de manera tradicional
                 formatted_phone = format_phone_number(sender_id, contacts) if sender_id else "Desconocido"
-                
+
                 # Buscar nombre del remitente en los contactos (método tradicional)
                 contact_name = None
                 if contacts and sender_id:
                     sender_phone_raw = sender_id.split('@')[0] if sender_id and '@' in sender_id else sender_id
-                    
+
                     if sender_phone_raw in contacts:
                         contact_info = contacts[sender_phone_raw]
                         if contact_info.get('display_name'):
@@ -715,19 +927,19 @@ def print_results(results, show_context=True, show_contact_relevance=False, cont
     for i, result in enumerate(message_results, 1):
         # Título del resultado con formato más compacto
         print(f"Resultado {i}" + (f" ({result.get('score', 0):.1f})" if 'score' in result else ""))
-        
+
         # Organizar información en un formato más conciso
         # 1. Información del chat (siempre visible)
         chat_name = result.get('chat_name', "")
         if chat_name is None or chat_name == "None":
             chat_name = "Chat sin nombre"
-            
+
         # 2. Información de dirección y tipo (si está disponible)
         if 'destination_info' in result:
             dest_info = result['destination_info']
             direction = dest_info.get('direction', '').capitalize()
             chat_type = dest_info.get('chat_type')
-            
+
             # Mostrar tipo y dirección juntos si ambos están disponibles
             if chat_type == 'group':
                 print(f"Chat: {chat_name} (Grupo) • {direction}")
@@ -741,7 +953,7 @@ def print_results(results, show_context=True, show_contact_relevance=False, cont
                 print(f"Chat: {chat_name} • {direction}")
         else:
             print(f"Chat: {chat_name}")
-            
+
         # 3. Información del remitente (formato compacto)
         if result.get('from_me'):
             print(f"De: Yo")
@@ -753,7 +965,7 @@ def print_results(results, show_context=True, show_contact_relevance=False, cont
                 print(f"De: {phone_info}")
             else:
                 print(f"De: {sender_info}")
-                
+
         # 4. Fecha del mensaje
         print(f"Fecha: {result.get('date', 'Desconocido')}")
 

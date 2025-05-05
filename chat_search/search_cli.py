@@ -23,6 +23,11 @@ def search_command_handler(tool, args):
         print("Error: --keywords must be specified for search mode.")
         return None
 
+    # Determinar si se debe preprocesar los datos
+    preprocess_data = getattr(args, 'preprocess_data', True)
+    if hasattr(args, 'no_preprocess'):
+        preprocess_data = not args.no_preprocess
+
     results = tool.search(
         keywords=args.keywords,
         min_score=args.min_score,
@@ -32,7 +37,8 @@ def search_command_handler(tool, args):
         chat_filter=args.chat,
         sender_filter=args.sender,
         phone_filter=args.phone,
-        calculate_contact_relevance=args.contact_relevance
+        calculate_contact_relevance=args.contact_relevance,
+        preprocess_data=preprocess_data
     )
 
     print_results(results, show_context=True, contacts=tool.contacts)
@@ -60,6 +66,8 @@ def search_interactive_handler(tool):
     end_date = input("End date (YYYY-MM-DD, optional): ")
     min_score = float(input("Minimum relevance score (0-100, default 10): ") or 10)
     max_results = int(input("Maximum results to show (default 20): ") or 20)
+    preprocess = input("Preprocesar datos para mejorar la búsqueda? (s/n, default s): ").lower() != 'n'
+    calculate_contact_relevance = input("Calcular relevancia de contactos? (s/n, default s): ").lower() != 'n'
 
     # Clean up filters
     if not chat_filter:
@@ -82,7 +90,9 @@ def search_interactive_handler(tool):
         end_date=end_date,
         chat_filter=chat_filter,
         sender_filter=sender_filter,
-        phone_filter=phone_filter
+        phone_filter=phone_filter,
+        calculate_contact_relevance=calculate_contact_relevance,
+        preprocess_data=preprocess
     )
 
     # Show results

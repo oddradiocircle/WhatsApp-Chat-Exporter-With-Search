@@ -1,5 +1,7 @@
 tqdm
+# Base packages
 numpy
+scipy
 scikit-learn
 nltk
 spacy
@@ -7,3 +9,9 @@ textblob
 sentence-transformers
 transformers
 torch
+
+# Intel oneAPI packages (install via conda)
+# conda install -c intel numpy scipy scikit-learn
+# conda install -c intel pytorch
+# conda install -c intel intel-extension-for-pytorch
+# conda install -c intel intel-extension-for-scikit-learn
