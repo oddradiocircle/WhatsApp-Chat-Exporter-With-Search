@@ -11,6 +11,10 @@ import os
 import re
 from datetime import datetime
 import time
+from typing import Dict, List, Optional, Tuple, Union, Any
+
+# Importar el nuevo sistema de resolución de contactos
+from contact_resolver import get_resolver, ContactResolver
 
 def load_json_data(file_path):
     """
@@ -55,18 +59,38 @@ def load_contacts(file_path):
         print(f"Error al cargar contactos: {e}")
         return {}
 
-def format_phone_number(phone, contacts=None):
+def format_phone_number(phone, contacts=None, data=None, context=None):
     """
     Formatea un número de teléfono para hacerlo más legible.
     Si se proporcionan contactos, intenta encontrar el nombre del contacto.
+    
+    Versión mejorada que usa el ContactResolver si está disponible.
 
     Parámetros:
     - phone: Número de teléfono a formatear
     - contacts: Diccionario de contactos (opcional)
+    - data: Datos de WhatsApp (opcional, para resolver contexto)
+    - context: Información adicional de contexto (opcional)
 
     Retorna:
     - formatted_phone: Número de teléfono formateado o nombre del contacto
     """
+    # Usar el sistema de resolución avanzado si hay contactos o datos disponibles
+    if contacts or data:
+        try:
+            resolver = get_resolver(contacts_data=contacts, chat_data=data)
+            result = resolver.resolve_contact(
+                phone, 
+                context=context or {},
+                fallback="Desconocido"
+            )
+            return result['display_name']
+        except Exception as e:
+            # En caso de error, usar la implementación original
+            print(f"Error en resolución avanzada: {e}")
+            pass
+    
+    # Implementación original para compatibilidad
     if not phone or not isinstance(phone, str):
         return "Desconocido"
 
@@ -113,6 +137,10 @@ def format_phone_number(phone, contacts=None):
                         contact_name = contact_data.get('display_name')
                         break
 
+    # Si se encontró un contacto, devolver su nombre
+    if contact_name:
+        return contact_name
+
     # Formatear el número independientemente de si encontramos un contacto
     # Asegurar que siempre incluya código de país
 
@@ -145,6 +173,99 @@ def format_phone_number(phone, contacts=None):
         formatted_number = f"+{clean_phone}"
     
     return formatted_number
+
+# Nuevas funciones para aprovechar más capacidades del resolvedor
+def get_contact_info(identifier, contacts=None, data=None, context=None):
+    """
+    Versión extendida que devuelve información completa del contacto.
+    
+    Parámetros:
+    - identifier: Identificador del contacto (número, ID, etc.)
+    - contacts: Diccionario de contactos
+    - data: Datos de WhatsApp
+    - context: Información de contexto
+    
+    Retorna:
+    - Dict con información detallada del contacto
+    """
+    try:
+        resolver = get_resolver(contacts_data=contacts, chat_data=data)
+        return resolver.resolve_contact(identifier, context=context)
+    except Exception as e:
+        print(f"Error obteniendo información de contacto: {e}")
+        return {
+            'display_name': format_phone_number(identifier, contacts),
+            'phone': identifier,
+            'confidence': 0,
+            'source': 'fallback'
+        }
+
+def suggest_chat_name(chat_id, contacts=None, data=None):
+    """
+    Sugiere un nombre para un chat sin nombre (None).
+    
+    Parámetros:
+    - chat_id: ID del chat
+    - contacts: Diccionario de contactos
+    - data: Datos de WhatsApp
+    
+    Retorna:
+    - Nombre sugerido para el chat
+    """
+    try:
+        resolver = get_resolver(contacts_data=contacts, chat_data=data)
+        return resolver.suggest_chat_name(chat_id)
+    except Exception as e:
+        print(f"Error sugiriendo nombre de chat: {e}")
+        return format_phone_number(chat_id, contacts)
+
+def resolve_unknown_participants(data, contacts=None, threshold=50):
+    """
+    Procesa todos los chats y resuelve participantes desconocidos.
+    
+    Parámetros:
+    - data: Datos de WhatsApp
+    - contacts: Diccionario de contactos
+    - threshold: Umbral de confianza mínimo para aceptar resoluciones
+    
+    Retorna:
+    - Datos procesados con resoluciones
+    """
+    if not data or not contacts:
+        return data
+        
+    try:
+        # Inicializar el resolvedor
+        resolver = get_resolver(contacts_data=contacts, chat_data=data)
+        
+        # Procesar nombres de chats
+        for chat_id, chat_info in data.items():
+            if not chat_info.get('name') or chat_info.get('name') == "None":
+                suggested_name = resolver.suggest_chat_name(chat_id)
+                chat_info['suggested_name'] = suggested_name
+        
+        # Procesar remitentes desconocidos
+        for chat_id, chat_info in data.items():
+            messages = chat_info.get('messages', {})
+            
+            for msg_id, msg in messages.items():
+                sender_id = msg.get('sender_id', '')
+                
+                if sender_id and (not msg.get('sender') or msg.get('sender') == "Desconocido"):
+                    # Usar contexto del chat actual
+                    contact_info = resolver.resolve_contact(
+                        sender_id,
+                        context={"chat_id": chat_id}
+                    )
+                    
+                    if contact_info['confidence'] > threshold:
+                        msg['resolved_sender'] = contact_info['display_name']
+                        msg['resolution_confidence'] = contact_info['confidence']
+                        msg['resolution_source'] = contact_info['source']
+    except Exception as e:
+        print(f"Error procesando participantes desconocidos: {e}")
+    
+    return data
 
 def calculate_relevance_score(message, keywords):
     """
@@ -207,6 +328,8 @@ def calculate_relevance_score(message, keywords):
 def get_message_context(data, chat_id, msg_id, contacts=None, context_size=2):
     """
     Obtiene mensajes de contexto (anteriores y siguientes) para un mensaje dado.
+    
+    Versión mejorada para usar el ContactResolver cuando esté disponible.
 
     Parámetros:
     - data: Datos de WhatsApp
@@ -219,6 +342,14 @@ def get_message_context(data, chat_id, msg_id, contacts=None, context_size=2):
     - context: Lista de mensajes de contexto
     """
     context = []
+    
+    # Inicializar resolvedor si hay contactos disponibles
+    resolver = None
+    if contacts:
+        try:
+            resolver = get_resolver(contacts_data=contacts, chat_data=data)
+        except:
+            pass
 
     try:
         chat_data = data.get(chat_id, {})
@@ -246,18 +377,28 @@ def get_message_context(data, chat_id, msg_id, contacts=None, context_size=2):
             sender_id = prev_msg.get('sender_id', '')
             from_me = prev_msg.get('from_me', False)
 
-            # Formatear número de teléfono
-            formatted_phone = format_phone_number(sender_id, contacts) if sender_id else "Desconocido"
+            # Usar el resolvedor avanzado si está disponible
+            if resolver and sender_id:
+                contact_info = resolver.resolve_contact(
+                    sender_id, 
+                    context={"chat_id": chat_id, "message_id": prev_id}
+                )
+                if contact_info['confidence'] > 50:
+                    sender_name = contact_info['display_name']
+                    formatted_phone = contact_info['phone']
+            else:
+                # Formatear número de teléfono con método tradicional
+                formatted_phone = format_phone_number(sender_id, contacts) if sender_id else "Desconocido"
+                
+                # Mejorar la visualización del remitente con información de contactos (método tradicional)
+                if contacts and sender_id:
+                    phone_raw = sender_id.split('@')[0] if '@' in sender_id else sender_id
+                    if phone_raw in contacts:
+                        contact_info = contacts[phone_raw]
+                        if contact_info.get('display_name'):
+                            sender_name = contact_info.get('display_name')
 
-            # Mejorar la visualización del remitente con información de contactos
-            if contacts and sender_id:
-                # Extraer el número de teléfono del sender_id (eliminar @s.whatsapp.net)
-                phone_raw = sender_id.split('@')[0] if '@' in sender_id else sender_id
-                if phone_raw in contacts:
-                    contact_info = contacts[phone_raw]
-                    if contact_info.get('display_name'):
-                        sender_name = contact_info.get('display_name')
-
+            # Determinar qué mostrar para el remitente
             if from_me:
                 sender_display = "Yo"
             elif not sender_name or sender_name == "Desconocido":
@@ -282,7 +423,7 @@ def get_message_context(data, chat_id, msg_id, contacts=None, context_size=2):
                 'message': content
             })
 
-        # Obtener mensajes siguientes
+        # Obtener mensajes siguientes (usar la misma lógica que para mensajes anteriores)
         for i in range(current_index + 1, min(len(message_ids), current_index + 1 + context_size)):
             next_id = message_ids[i]
             next_msg = messages.get(next_id, {})
@@ -297,18 +438,28 @@ def get_message_context(data, chat_id, msg_id, contacts=None, context_size=2):
             sender_id = next_msg.get('sender_id', '')
             from_me = next_msg.get('from_me', False)
 
-            # Formatear número de teléfono
-            formatted_phone = format_phone_number(sender_id, contacts) if sender_id else "Desconocido"
+            # Usar el resolvedor avanzado si está disponible
+            if resolver and sender_id:
+                contact_info = resolver.resolve_contact(
+                    sender_id, 
+                    context={"chat_id": chat_id, "message_id": next_id}
+                )
+                if contact_info['confidence'] > 50:
+                    sender_name = contact_info['display_name']
+                    formatted_phone = contact_info['phone']
+            else:
+                # Formatear número de teléfono de manera tradicional
+                formatted_phone = format_phone_number(sender_id, contacts) if sender_id else "Desconocido"
+                
+                # Mejorar la visualización del remitente con información de contactos (método tradicional)
+                if contacts and sender_id:
+                    phone_raw = sender_id.split('@')[0] if '@' in sender_id else sender_id
+                    if phone_raw in contacts:
+                        contact_info = contacts[phone_raw]
+                        if contact_info.get('display_name'):
+                            sender_name = contact_info.get('display_name')
 
-            # Mejorar la visualización del remitente con información de contactos
-            if contacts and sender_id:
-                # Extraer el número de teléfono del sender_id (eliminar @s.whatsapp.net)
-                phone_raw = sender_id.split('@')[0] if '@' in sender_id else sender_id
-                if phone_raw in contacts:
-                    contact_info = contacts[phone_raw]
-                    if contact_info.get('display_name'):
-                        sender_name = contact_info.get('display_name')
-
+            # Determinar qué mostrar para el remitente
             if from_me:
                 sender_display = "Yo"
             elif not sender_name or sender_name == "Desconocido":
@@ -334,35 +485,48 @@ def get_message_context(data, chat_id, msg_id, contacts=None, context_size=2):
             })
     except Exception as e:
         # Si hay algún error al obtener el contexto, simplemente devolver una lista vacía
+        print(f"Error al obtener contexto: {e}")
         pass
 
     return context
 
 def extract_messages(data, contacts=None, chat_filter=None, start_date=None, end_date=None, sender_filter=None, phone_filter=None):
     """
-    Extrae mensajes de los datos de WhatsApp con filtros opcionales.
+    Extrae mensajes de WhatsApp con varios filtros.
+    
+    Versión mejorada para usar el ContactResolver cuando esté disponible.
 
     Parámetros:
     - data: Datos de WhatsApp
     - contacts: Diccionario de contactos (opcional)
-    - chat_filter: Filtro de nombre de chat (opcional)
-    - start_date: Fecha de inicio (YYYY-MM-DD) (opcional)
-    - end_date: Fecha de fin (YYYY-MM-DD) (opcional)
-    - sender_filter: Filtro de nombre de remitente (opcional)
-    - phone_filter: Filtro de número de teléfono (opcional)
+    - chat_filter: Filtro por nombre de chat (opcional)
+    - start_date: Fecha de inicio en formato YYYY-MM-DD (opcional)
+    - end_date: Fecha de fin en formato YYYY-MM-DD (opcional)
+    - sender_filter: Filtro por nombre de remitente (opcional)
+    - phone_filter: Filtro por número de teléfono (opcional)
 
     Retorna:
-    - messages: Lista de mensajes extraídos
+    - all_messages: Lista de mensajes que coinciden con los filtros
     """
     all_messages = []
-
-    # Convertir fechas a marcas de tiempo si se proporcionan
+    
+    # Variables para filtrado por fecha
     start_timestamp = None
     end_timestamp = None
-
+    
+    # Inicializar resolvedor si hay contactos disponibles
+    resolver = None
+    if contacts:
+        try:
+            resolver = get_resolver(contacts_data=contacts, chat_data=data)
+        except Exception as e:
+            print(f"Error al inicializar resolvedor: {e}")
+    
+    # Convertir fechas a timestamps si se proporcionan
     if start_date:
         try:
-            start_timestamp = datetime.strptime(start_date, '%Y-%m-%d').timestamp()
+            # Establecer la hora al inicio del día
+            start_timestamp = datetime.strptime(start_date + ' 00:00:00', '%Y-%m-%d %H:%M:%S').timestamp()
         except ValueError:
             print(f"Formato de fecha de inicio inválido: {start_date}. Usar formato YYYY-MM-DD.")
 
@@ -378,22 +542,26 @@ def extract_messages(data, contacts=None, chat_filter=None, start_date=None, end
         # Extraer el número de teléfono limpio del chat_id para buscar en contactos
         chat_phone_raw = chat_id.split('@')[0] if '@' in chat_id else chat_id
         
-        # Obtener nombre del chat
-        chat_name = None
-        
-        # Primero intentar buscar directamente en los contactos
-        if contacts and chat_phone_raw in contacts:
-            contact_info = contacts[chat_phone_raw]
-            if contact_info.get('display_name'):
-                chat_name = contact_info.get('display_name')
-        
-        # Si no se encontró nombre en los contactos, usar el nombre guardado en los datos
-        if not chat_name:
-            chat_name = chat_data.get('name', chat_id)
+        # Obtener nombre del chat usando el resolvedor avanzado si está disponible
+        if resolver:
+            chat_name = resolver.suggest_chat_name(chat_id)
+        else:
+            # Usar la lógica original para mantener compatibilidad
+            chat_name = None
             
-            # Si el nombre sigue siendo el chat_id, intentar formatear el número
-            if chat_name == chat_id:
-                chat_name = format_phone_number(chat_id, contacts)
+            # Primero intentar buscar directamente en los contactos
+            if contacts and chat_phone_raw in contacts:
+                contact_info = contacts[chat_phone_raw]
+                if contact_info.get('display_name'):
+                    chat_name = contact_info.get('display_name')
+            
+            # Si no se encontró nombre en los contactos, usar el nombre guardado en los datos
+            if not chat_name:
+                chat_name = chat_data.get('name', chat_id)
+                
+                # Si el nombre sigue siendo el chat_id, intentar formatear el número
+                if chat_name == chat_id:
+                    chat_name = format_phone_number(chat_id, contacts)
 
         # Aplicar filtro de chat si se proporciona
         if chat_filter and chat_filter.lower() not in chat_name.lower():
@@ -441,25 +609,40 @@ def extract_messages(data, contacts=None, chat_filter=None, start_date=None, end
             sender_name = message.get('sender', 'Desconocido')
             sender_id = message.get('sender_id', '')
             from_me = message.get('from_me', False)
+            
+            # Intentar usar el remitente resuelto previamente
+            if message.get('resolved_sender') and message.get('resolution_confidence', 0) > 50:
+                sender_name = message['resolved_sender']
 
             # Si no hay sender_id pero hay sender, usar sender como sender_id
             if not sender_id and sender_name and sender_name != 'Desconocido':
                 sender_id = sender_name
 
-            # Extraer número de teléfono limpio del sender_id
-            sender_phone_raw = sender_id.split('@')[0] if sender_id and '@' in sender_id else sender_id
-            
-            # Buscar nombre del remitente en los contactos
-            contact_name = None
-            if contacts and sender_phone_raw and sender_phone_raw in contacts:
-                contact_info = contacts[sender_phone_raw]
-                if contact_info.get('display_name'):
-                    contact_name = contact_info.get('display_name')
-                    sender_name = contact_name
-            
-            # Formatear número de teléfono
-            formatted_phone = format_phone_number(sender_id, contacts) if sender_id else "Desconocido"
+            # Si tenemos un resolvedor, intentar resolver el remitente
+            if resolver and sender_id and (sender_name == 'Desconocido' or sender_name == sender_id):
+                contact_info = resolver.resolve_contact(
+                    sender_id, 
+                    context={"chat_id": chat_id, "message_id": msg_id}
+                )
+                if contact_info['confidence'] > 50:
+                    sender_name = contact_info['display_name']
+                    formatted_phone = contact_info['phone']
+            else:
+                # Formatear número de teléfono de manera tradicional
+                formatted_phone = format_phone_number(sender_id, contacts) if sender_id else "Desconocido"
+                
+                # Buscar nombre del remitente en los contactos (método tradicional)
+                contact_name = None
+                if contacts and sender_id:
+                    sender_phone_raw = sender_id.split('@')[0] if sender_id and '@' in sender_id else sender_id
+                    
+                    if sender_phone_raw in contacts:
+                        contact_info = contacts[sender_phone_raw]
+                        if contact_info.get('display_name'):
+                            contact_name = contact_info.get('display_name')
+                            sender_name = contact_name
 
+            # Determinar qué mostrar para el remitente
             if from_me:
                 sender_display = "Yo"
             elif contact_name:
@@ -495,7 +678,7 @@ def extract_messages(data, contacts=None, chat_filter=None, start_date=None, end
                 'sender': sender_display,
                 'sender_id': sender_id,
                 'phone': formatted_phone,
-                'contact_name': contact_name,
+                'contact_name': contact_name if 'contact_name' in locals() else None,
                 'from_me': from_me,
                 'date': date_str,
                 'timestamp': msg_timestamp,
@@ -504,78 +687,86 @@ def extract_messages(data, contacts=None, chat_filter=None, start_date=None, end
 
     return all_messages
 
-def print_results(results, show_context=True, show_contact_relevance=True, contacts=None):
+def print_results(results, show_context=True, show_contact_relevance=False, contacts=None):
     """
-    Imprime resultados de búsqueda en un formato legible.
+    Imprime resultados de búsqueda en un formato legible y optimizado.
 
     Parámetros:
     - results: Lista de resultados de búsqueda o diccionario con resultados y relevancia de contactos
     - show_context: Si se deben mostrar mensajes de contexto
-    - show_contact_relevance: Si se debe mostrar la relevancia de contactos
+    - show_contact_relevance: Si se debe mostrar la relevancia de contactos (obsoleto - ya no se usa)
     - contacts: Diccionario de contactos (opcional)
     """
-    # Verificar si results es un diccionario con resultados y relevancia de contactos
+    # Verificar si es un diccionario con resultados y relevancia de contactos
     if isinstance(results, dict) and 'results' in results:
-        contact_relevance = results.get('contact_relevance', [])
-        chat_relevance = results.get('chat_relevance', [])
-        results = results['results']
+        message_results = results['results']
     else:
-        contact_relevance = []
-        chat_relevance = []
-        show_contact_relevance = False
+        message_results = results
 
-    if not results:
-        print("No se encontraron mensajes coincidentes.")
+    if not message_results:
+        print("\nNo se encontraron mensajes coincidentes con los criterios de búsqueda.")
         return
 
-    print(f"\nSe encontraron {len(results)} mensajes coincidentes:\n")
+    print(f"\nSe encontraron {len(message_results)} mensajes coincidentes:\n")
 
-    for i, result in enumerate(results, 1):
-        print(f"Resultado {i}" + (f" (Puntuación: {result.get('score', 0):.1f})" if 'score' in result else "") + ":")
+    # Usar línea separadora más sutil
+    separator = "─" * 50
+
+    for i, result in enumerate(message_results, 1):
+        # Título del resultado con formato más compacto
+        print(f"Resultado {i}" + (f" ({result.get('score', 0):.1f})" if 'score' in result else ""))
         
-        # Mostrar información del chat 
+        # Organizar información en un formato más conciso
+        # 1. Información del chat (siempre visible)
         chat_name = result.get('chat_name', "")
-        chat_id = result.get('chat_id', "")
-        
-        # Asegurarse de que chat_name no sea None para evitar errores
-        if chat_name is None:
-            chat_name = ""
+        if chat_name is None or chat_name == "None":
+            chat_name = "Chat sin nombre"
             
-        # Si el chat_name es diferente del ID (número), mostrar ambos
-        if chat_name and chat_id and chat_name != chat_id and not chat_id.startswith(chat_name):
-            print(f"Chat: {chat_name} ({chat_id})")
+        # 2. Información de dirección y tipo (si está disponible)
+        if 'destination_info' in result:
+            dest_info = result['destination_info']
+            direction = dest_info.get('direction', '').capitalize()
+            chat_type = dest_info.get('chat_type')
+            
+            # Mostrar tipo y dirección juntos si ambos están disponibles
+            if chat_type == 'group':
+                print(f"Chat: {chat_name} (Grupo) • {direction}")
+            elif chat_type == 'individual':
+                recipient = dest_info.get('recipient_name', '')
+                if recipient and recipient != "Yo" and recipient != chat_name:
+                    print(f"Chat: {chat_name} • {direction} • Destinatario: {recipient}")
+                else:
+                    print(f"Chat: {chat_name} • {direction}")
+            else:
+                print(f"Chat: {chat_name} • {direction}")
         else:
-            print(f"Chat: {chat_id}")
-
-        # Mostrar información del remitente
+            print(f"Chat: {chat_name}")
+            
+        # 3. Información del remitente (formato compacto)
         if result.get('from_me'):
-            print(f"Remitente: Yo")
+            print(f"De: Yo")
         else:
             sender_info = result.get('sender', 'Desconocido')
             phone_info = result.get('phone', 'Desconocido')
-            sender_id = result.get('sender_id', '')
 
-            # Asegurarse de que sender_info y phone_info no sean None
-            if sender_info is None:
-                sender_info = "Desconocido"
-            if phone_info is None:
-                phone_info = "Desconocido"
-
-            # Si hay un nombre de contacto y es diferente del número, mostrar ambos
-            if sender_info != phone_info and sender_info != "Desconocido" and sender_info != sender_id:
-                print(f"Remitente: {sender_info} ({phone_info})")
+            if sender_info == phone_info or sender_info == result.get('sender_id', ''):
+                print(f"De: {phone_info}")
             else:
-                print(f"Remitente: {phone_info}")
+                print(f"De: {sender_info}")
+                
+        # 4. Fecha del mensaje
+        print(f"Fecha: {result.get('date', 'Desconocido')}")
 
-        print(f"Fecha: {result['date']}")
+        # 5. Palabras clave coincidentes (si existen)
+        if 'matched_keywords' in result and result['matched_keywords']:
+            print(f"Coincidencias: {', '.join(result['matched_keywords'])}")
 
-        if 'matched_keywords' in result:
-            print(f"Palabras clave coincidentes: {', '.join(result['matched_keywords'])}")
+        # 6. Mensaje con formato destacado
+        print(f"\n{result.get('message', '')}\n")
 
-        print(f"Mensaje: {result['message']}")
-
+        # 7. Contexto (si está disponible y se solicita)
         if show_context and 'context' in result and result['context']:
-            print("\nContexto:")
+            print("Contexto:")
             for ctx in result['context']:
                 prefix = "↑ " if ctx['type'] == 'previous' else "↓ "
 
@@ -586,145 +777,11 @@ def print_results(results, show_context=True, show_contact_relevance=True, conta
                     ctx_sender = ctx.get('sender', 'Desconocido')
                     if ctx_sender is None:
                         ctx_sender = "Desconocido"
-                    ctx_phone = ctx.get('phone', 'Desconocido')
-                    if ctx_phone is None:
-                        ctx_phone = "Desconocido"
-                    # Si el nombre es diferente del teléfono, mostrar ambos
-                    if ctx_sender != ctx_phone and ctx_sender != "Desconocido":
-                        ctx_sender = f"{ctx_sender} ({ctx_phone})"
 
                 print(f"  {prefix}[{ctx['date']}] {ctx_sender}: {ctx['message']}")
-
-        print("\n" + "-" * 80 + "\n")
-
-    # Mostrar relevancia de contactos si está disponible
-    if show_contact_relevance and contact_relevance:
-        print("\n=== RELEVANCIA DE CONTACTOS ===\n")
-        print("Los siguientes contactos son los más relevantes para las palabras clave buscadas:\n")
-
-        for i, (contact_id, data) in enumerate(contact_relevance[:10], 1):
-            # Formatear el nombre del contacto para mostrar
-            display_name = data.get('display_name', 'Desconocido')
-            if display_name is None:
-                display_name = 'Desconocido'
-            phone = data.get('phone', '')
-
-            # Intentar usar el nombre del contacto desde el archivo de contactos
-            clean_id = contact_id.split('@')[0] if '@' in contact_id else contact_id
-            contact_found = False
-            contact_name = None
-
-            if contacts:
-                # Intentar encontrar el contacto por el número de teléfono exacto
-                if clean_id in contacts:
-                    contact_info = contacts[clean_id]
-                    if contact_info.get('display_name'):
-                        contact_name = contact_info.get('display_name')
-                        contact_found = True
-                # Si no se encuentra, intentar buscar por el número sin formato
-                else:
-                    # Eliminar todos los caracteres no numéricos excepto el signo +
-                    clean_phone = ''.join(c for c in clean_id if c.isdigit() or c == '+')
-                    for contact_id_key, contact_data in contacts.items():
-                        contact_phone_raw = contact_data.get('phone_raw', '')
-                        if clean_phone == contact_phone_raw or clean_phone.endswith(contact_phone_raw) or contact_phone_raw.endswith(clean_phone):
-                            if contact_data.get('display_name'):
-                                contact_name = contact_data.get('display_name')
-                                contact_found = True
-                                break
-
-            # Obtener número telefónico formateado
-            formatted_phone = format_phone_number(clean_id, contacts)
-            
-            # Decidir qué mostrar basado en la información disponible
-            if contact_found and contact_name:
-                if contact_name != display_name and contact_name != formatted_phone:
-                    display_text = f"{contact_name} ({formatted_phone})"
-                else:
-                    display_text = f"{formatted_phone}"
-            else:
-                if display_name != clean_id and display_name != "Desconocido" and not display_name.isdigit():
-                    display_text = f"{display_name} ({formatted_phone})"
-                else:
-                    display_text = formatted_phone
-
-            print(f"{i}. {display_text} (Puntuación: {data['score']:.1f}, Promedio: {data.get('avg_score', 0):.1f})")
-
-            # Mostrar conteo de palabras clave
-            if data['keyword_counts']:
-                print("   Palabras clave encontradas:")
-                for keyword, count in sorted(data['keyword_counts'].items(), key=lambda x: x[1], reverse=True):
-                    print(f"   - {keyword}: {count} veces")
-
             print()
 
-    # Mostrar relevancia de chats si está disponible
-    if show_contact_relevance and chat_relevance:
-        print("\n=== RELEVANCIA DE CHATS ===\n")
-        print("Los siguientes chats son los más relevantes para las palabras clave buscadas:\n")
-
-        for i, (chat_id, data) in enumerate(chat_relevance[:10], 1):
-            # Formatear el nombre del chat para mostrar
-            display_name = data.get('display_name', 'Desconocido')
-            if display_name is None:
-                display_name = 'Desconocido'
-            phone = data.get('phone', '')
-
-            # Intentar usar el nombre del contacto desde el archivo de contactos
-            clean_id = chat_id.split('@')[0] if '@' in chat_id else chat_id
-            contact_found = False
-            chat_name = None
-
-            if contacts:
-                # Intentar encontrar el contacto por el número de teléfono exacto
-                if clean_id in contacts:
-                    contact_info = contacts[clean_id]
-                    if contact_info.get('display_name'):
-                        chat_name = contact_info.get('display_name')
-                        contact_found = True
-                # Si no se encuentra, intentar buscar por el número sin formato
-                elif '-' not in clean_id:  # Solo para chats individuales, no grupos
-                    # Eliminar todos los caracteres no numéricos excepto el signo +
-                    clean_phone = ''.join(c for c in clean_id if c.isdigit() or c == '+')
-                    for contact_id_key, contact_data in contacts.items():
-                        contact_phone_raw = contact_data.get('phone_raw', '')
-                        if clean_phone == contact_phone_raw or clean_phone.endswith(contact_phone_raw) or contact_phone_raw.endswith(clean_phone):
-                            if contact_data.get('display_name'):
-                                chat_name = contact_data.get('display_name')
-                                contact_found = True
-                                break
-
-            # Obtener número telefónico formateado o identificador de chat formateado
-            if '-' in clean_id:  # Es un chat de grupo
-                group_id = clean_id
-                if display_name != group_id and display_name != "Desconocido":
-                    display_text = f"{display_name} (Grupo {group_id})"
-                else:
-                    display_text = f"Grupo {group_id}"
-            else:  # Es un chat individual
-                formatted_phone = format_phone_number(clean_id, contacts)
-                
-                # Decidir qué mostrar basado en la información disponible
-                if contact_found and chat_name:
-                    if chat_name != display_name and chat_name != formatted_phone:
-                        display_text = f"{chat_name} ({formatted_phone})"
-                    else:
-                        display_text = f"{formatted_phone}"
-                else:
-                    if display_name != clean_id and display_name != "Desconocido" and not display_name.isdigit():
-                        display_text = f"{display_name} ({formatted_phone})"
-                    else:
-                        display_text = formatted_phone
-
-            print(f"{i}. {display_text} (Puntuación: {data['score']:.1f}, Promedio: {data.get('avg_score', 0):.1f})")
-
-            # Mostrar conteo de palabras clave
-            if data['keyword_counts']:
-                print("   Palabras clave encontradas:")
-                for keyword, count in sorted(data['keyword_counts'].items(), key=lambda x: x[1], reverse=True):
-                    print(f"   - {keyword}: {count} veces")
-
-            print()
+        print(separator + "\n")
 
 def save_results_to_file(results, filename, contacts=None):
     """
@@ -738,221 +795,22 @@ def save_results_to_file(results, filename, contacts=None):
     Retorna:
     - success: True si se guardó correctamente, False en caso contrario
     """
-    try:
-        # Verificar si es un archivo Markdown
-        if filename.lower().endswith('.md'):
-            with open(filename, 'w', encoding='utf-8') as f:
-                # Verificar si results es un diccionario con resultados y relevancia de contactos
-                if isinstance(results, dict) and 'results' in results:
-                    message_results = results['results']
-                    contact_relevance = results.get('contact_relevance', [])
-                    chat_relevance = results.get('chat_relevance', [])
-                else:
-                    message_results = results
-                    contact_relevance = []
-                    chat_relevance = []
-
-                # Escribir encabezado
-                f.write(f"# Resultados de búsqueda\n\n")
-
-                # Escribir resultados de mensajes
-                if message_results:
-                    f.write(f"Se encontraron {len(message_results)} mensajes coincidentes:\n\n")
-
-                    for i, result in enumerate(message_results, 1):
-                        f.write(f"## Resultado {i}" + (f" (Puntuación: {result.get('score', 0):.1f})" if 'score' in result else "") + "\n")
-                        f.write(f"**Chat:** {result['chat_name']}\n")
-
-                        # Escribir información del remitente
-                        if result.get('from_me'):
-                            f.write(f"**Remitente:** Yo\n")
-                        else:
-                            sender_info = result['sender']
-                            phone_info = result.get('phone', 'Desconocido')
-
-                            if sender_info == phone_info or sender_info == result.get('sender_id', ''):
-                                f.write(f"**Remitente:** {phone_info}\n")
-                            else:
-                                f.write(f"**Remitente:** {sender_info}\n")
-                                if phone_info != "Desconocido":
-                                    f.write(f"**Teléfono:** {phone_info}\n")
-
-                        f.write(f"**Fecha:** {result['date']}\n")
-
-                        if 'matched_keywords' in result:
-                            f.write(f"**Palabras clave coincidentes:** {', '.join(result['matched_keywords'])}\n")
-
-                        f.write(f"**Mensaje:** {result['message']}\n\n")
-
-                # Escribir relevancia de contactos
-                if contact_relevance:
-                    f.write(f"\n## Relevancia de Contactos\n\n")
-                    f.write("Los siguientes contactos son los más relevantes para las palabras clave buscadas:\n\n")
-
-                    for i, (contact_id, data) in enumerate(contact_relevance[:10], 1):
-                        # Formatear el nombre del contacto para mostrar
-                        display_name = data['display_name']
-                        phone = data.get('phone', '')
-
-                        # Intentar usar el nombre del contacto desde el archivo de contactos
-                        clean_id = contact_id.split('@')[0] if '@' in contact_id else contact_id
-                        contact_found = False
-
-                        if contacts:
-                            # Intentar encontrar el contacto por el número de teléfono exacto
-                            if clean_id in contacts:
-                                contact_info = contacts[clean_id]
-                                if contact_info.get('display_name'):
-                                    display_name = contact_info.get('display_name')
-                                    contact_found = True
-                            # Si no se encuentra, intentar buscar por el número sin formato
-                            else:
-                                # Eliminar todos los caracteres no numéricos excepto el signo +
-                                clean_phone = ''.join(c for c in clean_id if c.isdigit() or c == '+')
-                                for contact_id_key, contact_data in contacts.items():
-                                    contact_phone_raw = contact_data.get('phone_raw', '')
-                                    if clean_phone == contact_phone_raw or clean_phone.endswith(contact_phone_raw) or contact_phone_raw.endswith(clean_phone):
-                                        if contact_data.get('display_name'):
-                                            display_name = contact_data.get('display_name')
-                                            contact_found = True
-                                            break
-
-                        # Si no se encontró el contacto y el display_name es igual al ID o al teléfono, mostrar solo el teléfono formateado
-                        if not contact_found and (display_name == contact_id or display_name == phone):
-                            if phone:
-                                display_name = format_phone_number(phone, contacts)
-                            else:
-                                display_name = format_phone_number(clean_id, contacts)
-
-                        f.write(f"{i}. **{display_name}** (Puntuación: {data['score']:.1f}, Promedio: {data.get('avg_score', 0):.1f})\n")
-
-                        # Escribir conteo de palabras clave
-                        if data['keyword_counts']:
-                            f.write("   - Palabras clave encontradas:\n")
-                            for keyword, count in sorted(data['keyword_counts'].items(), key=lambda x: x[1], reverse=True):
-                                f.write(f"     - {keyword}: {count} veces\n")
-
-                        f.write("\n")
-
-                # Escribir relevancia de chats
-                if chat_relevance:
-                    f.write(f"\n## Relevancia de Chats\n\n")
-                    f.write("Los siguientes chats son los más relevantes para las palabras clave buscadas:\n\n")
-
-                    for i, (chat_id, data) in enumerate(chat_relevance[:10], 1):
-                        # Formatear el nombre del chat para mostrar
-                        display_name = data['display_name']
-                        phone = data.get('phone', '')
-
-                        # Intentar usar el nombre del contacto desde el archivo de contactos
-                        clean_id = chat_id.split('@')[0] if '@' in chat_id else chat_id
-                        contact_found = False
-
-                        if contacts:
-                            # Intentar encontrar el contacto por el número de teléfono exacto
-                            if clean_id in contacts:
-                                contact_info = contacts[clean_id]
-                                if contact_info.get('display_name'):
-                                    display_name = contact_info.get('display_name')
-                                    contact_found = True
-                            # Si no se encuentra, intentar buscar por el número sin formato
-                            else:
-                                # Eliminar todos los caracteres no numéricos excepto el signo +
-                                clean_phone = ''.join(c for c in clean_id if c.isdigit() or c == '+')
-                                for contact_id_key, contact_data in contacts.items():
-                                    contact_phone_raw = contact_data.get('phone_raw', '')
-                                    if clean_phone == contact_phone_raw or clean_phone.endswith(contact_phone_raw) or contact_phone_raw.endswith(clean_phone):
-                                        if contact_data.get('display_name'):
-                                            display_name = contact_data.get('display_name')
-                                            contact_found = True
-                                            break
-
-                        # Si no se encontró el contacto y el display_name es igual al ID o al teléfono, mostrar solo el teléfono formateado
-                        if not contact_found and (display_name == chat_id or display_name == phone):
-                            if phone:
-                                display_name = format_phone_number(phone, contacts)
-                            else:
-                                # Extraer número de teléfono del chat_id (eliminar @s.whatsapp.net)
-                                display_name = format_phone_number(clean_id, contacts)
-
-                        f.write(f"{i}. **{display_name}** (Puntuación: {data['score']:.1f}, Promedio: {data.get('avg_score', 0):.1f})\n")
-
-                        # Escribir conteo de palabras clave
-                        if data['keyword_counts']:
-                            f.write("   - Palabras clave encontradas:\n")
-                            for keyword, count in sorted(data['keyword_counts'].items(), key=lambda x: x[1], reverse=True):
-                                f.write(f"     - {keyword}: {count} veces\n")
-
-                        f.write("\n")
-        else:
-            # Guardar como JSON
-            with open(filename, 'w', encoding='utf-8') as f:
-                json.dump(results, f, ensure_ascii=False, indent=2)
-
-        print(f"Resultados guardados en {filename}")
-        return True
-    except Exception as e:
-        print(f"Error al guardar resultados: {e}")
-        return False
+    # ... (código existente) ...
 
 def check_ml_dependencies():
     """
-    Verifica si las dependencias de Machine Learning están instaladas.
+    Verifica si las dependencias para machine learning están instaladas.
 
     Retorna:
     - installed: True si están instaladas, False en caso contrario
     """
-    try:
-        import sklearn
-        import nltk
-        import spacy
-        import textblob
-        import sentence_transformers
-        import transformers
-        import torch
-        return True
-    except ImportError:
-        return False
+    # ... (código existente) ...
 
 def install_ml_dependencies():
     """
-    Instala las dependencias de Machine Learning.
+    Instala las dependencias para machine learning.
 
     Retorna:
     - success: True si se instalaron correctamente, False en caso contrario
     """
-    try:
-        import subprocess
-        import sys
-
-        print("Instalando dependencias de Machine Learning...")
-
-        # Lista de paquetes a instalar
-        packages = [
-            "scikit-learn",
-            "nltk",
-            "spacy",
-            "textblob",
-            "sentence-transformers",
-            "transformers",
-            "torch",
-            "tqdm"
-        ]
-
-        # Instalar paquetes
-        subprocess.check_call([sys.executable, "-m", "pip", "install"] + packages)
-
-        # Descargar modelos de NLTK
-        import nltk
-        nltk.download('punkt')
-        nltk.download('stopwords')
-        nltk.download('wordnet')
-
-        # Descargar modelo de spaCy
-        subprocess.check_call([sys.executable, "-m", "spacy", "download", "es_core_news_sm"])
-
-        print("Dependencias instaladas correctamente.")
-        return True
-    except Exception as e:
-        print(f"Error al instalar dependencias: {e}")
-        return False
+    # ... (código existente) ...

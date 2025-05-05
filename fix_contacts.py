@@ -1,154 +1,173 @@
 #!/usr/bin/env python3
 """
-Script to fix contact display in WhatsApp search results
+Herramienta de corrección de contactos para WhatsApp Chat Exporter
+
+Esta herramienta procesa el archivo result.json y aplica el sistema avanzado de
+resolución de contactos para corregir contactos "Desconocido" y chats "None".
 """
 
-import json
 import os
+import json
+import argparse
 import sys
+from typing import Dict, Any, List, Tuple
 
-def format_phone_number(phone):
-    """Format a phone number to make it more readable."""
-    if not phone or not isinstance(phone, str):
-        return "Unknown"
+from tqdm import tqdm
+
+# Importar el sistema de resolución de contactos
+from contact_resolver import get_resolver, ContactResolver
+from whatsapp_core import load_json_data, load_contacts, resolve_unknown_participants
+
+
+def process_file(data_file: str, contacts_file: str, output_file: str = None, 
+                threshold: int = 50, backup: bool = True) -> None:
+    """
+    Procesa el archivo result.json y aplica resolución avanzada de contactos.
     
-    # If it's already a name (contains letters), return as is
-    if any(c.isalpha() for c in phone):
-        return phone
+    Args:
+        data_file: Ruta al archivo result.json
+        contacts_file: Ruta al archivo de contactos (whatsapp_contacts.json)
+        output_file: Archivo de salida (por defecto sobreescribe el original)
+        threshold: Umbral de confianza para aceptar resoluciones
+        backup: Si se debe crear una copia de seguridad del archivo original
+    """
+    print(f"Procesando archivo {data_file}...")
     
-    # Clean the phone number
-    digits = ''.join(c for c in phone if c.isdigit())
+    # Cargar datos
+    data = load_json_data(data_file)
+    if not data:
+        print("Error: No se pudieron cargar los datos.")
+        return
     
-    # Format based on length
-    if len(digits) <= 4:
-        return phone  # Too short, return as is
-    elif len(digits) <= 7:
-        return f"{digits[:3]}-{digits[3:]}"  # Local number
-    elif len(digits) <= 10:
-        return f"({digits[:3]}) {digits[3:6]}-{digits[6:]}"  # National number
-    else:
-        # International number
-        country_code = digits[:-10]
-        area_code = digits[-10:-7]
-        prefix = digits[-7:-4]
-        line = digits[-4:]
-        return f"+{country_code} ({area_code}) {prefix}-{line}"
+    # Cargar contactos
+    contacts = load_contacts(contacts_file)
+    if not contacts:
+        print("Advertencia: No se pudieron cargar contactos. La resolución será limitada.")
+    
+    # Hacer copia de seguridad si se solicita
+    if backup:
+        backup_file = f"{data_file}.bak"
+        print(f"Creando copia de seguridad en {backup_file}")
+        try:
+            with open(data_file, 'r', encoding='utf-8') as f_in:
+                with open(backup_file, 'w', encoding='utf-8') as f_out:
+                    f_out.write(f_in.read())
+        except Exception as e:
+            print(f"Error creando backup: {e}")
+            if input("¿Continuar sin backup? (s/n): ").lower() != 's':
+                return
+    
+    # Inicializar resolvedor
+    resolver = get_resolver(contacts_data=contacts, chat_data=data, reset=True)
+    
+    # Estadísticas
+    stats = {
+        'total_chats': len(data),
+        'renamed_chats': 0,
+        'total_messages': 0,
+        'renamed_senders': 0,
+        'added_destination_info': 0
+    }
+    
+    # Procesar chats sin nombre (None)
+    print("Procesando chats sin nombre...")
+    for chat_id, chat_info in tqdm(data.items(), desc="Chats"):
+        if not chat_info.get('name') or chat_info.get('name') == "None":
+            suggested_name = resolver.suggest_chat_name(chat_id)
+            
+            # Solo aplicar si tenemos un nombre significativo
+            if suggested_name and suggested_name != f"Grupo {chat_id}" and suggested_name != chat_id:
+                chat_info['name'] = suggested_name
+                stats['renamed_chats'] += 1
+                print(f"  - Se renombró chat: {chat_id} → {suggested_name}")
+    
+    # Procesar mensajes con remitentes desconocidos
+    print("Procesando remitentes desconocidos y añadiendo información de destino...")
+    for chat_id, chat_info in tqdm(data.items(), desc="Mensajes"):
+        messages = chat_info.get('messages', {})
+        stats['total_messages'] += len(messages)
+        
+        for msg_id, msg in messages.items():
+            sender_id = msg.get('sender_id', '')
+            
+            # Resolver remitente desconocido
+            if sender_id and (not msg.get('sender') or msg.get('sender') == "Desconocido"):
+                # Usar contexto del chat actual
+                contact_info = resolver.resolve_contact(
+                    sender_id,
+                    context={"chat_id": chat_id}
+                )
+                
+                if contact_info['confidence'] >= threshold:
+                    # Guardar nombre resuelto y metadata
+                    msg['sender'] = contact_info['display_name']
+                    msg['resolved_sender'] = contact_info['display_name']
+                    msg['resolution_confidence'] = contact_info['confidence']
+                    msg['resolution_source'] = contact_info['source']
+                    stats['renamed_senders'] += 1
+            
+            # Añadir información completa de destino
+            destination_info = resolver.get_message_destination_info(msg, chat_id)
+            
+            # Añadir la información de destino al mensaje
+            if destination_info:
+                msg['destination_info'] = {
+                    'chat_name': destination_info['chat'].get('display_name', 'Desconocido'),
+                    'chat_type': destination_info['chat'].get('type', 'unknown'),
+                    'recipient_name': destination_info['recipient'].get('display_name', 'Desconocido'),
+                    'direction': 'outgoing' if destination_info['is_outgoing'] else 'incoming'
+                }
+                stats['added_destination_info'] += 1
+                
+    # Guardar resultado
+    output = output_file or data_file
+    print(f"Guardando resultados en {output}...")
+    
+    try:
+        with open(output, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False)
+        print("¡Archivo guardado correctamente!")
+    except Exception as e:
+        print(f"Error guardando archivo: {e}")
+    
+    # Mostrar estadísticas
+    print("\nEstadísticas:")
+    print(f"- Total de chats: {stats['total_chats']}")
+    print(f"- Chats renombrados: {stats['renamed_chats']}")
+    print(f"- Total de mensajes: {stats['total_messages']}")
+    print(f"- Remitentes resueltos: {stats['renamed_senders']}")
+    print(f"- Mensajes con info de destino añadida: {stats['added_destination_info']}")
+    
+    # Calcular porcentaje de mejora
+    if stats['total_messages'] > 0:
+        improvement = (stats['renamed_senders'] / stats['total_messages']) * 100
+        print(f"- Porcentaje de mejora: {improvement:.2f}%")
+
 
 def main():
-    # Check if the original script exists
-    original_script = "whatsapp_search.py"
-    if not os.path.exists(original_script):
-        print(f"Error: Original script not found: {original_script}")
-        return 1
+    parser = argparse.ArgumentParser(description='Herramienta de corrección de contactos para WhatsApp Chat Exporter')
+    parser.add_argument('-f', '--file', default='whatsapp_export/result.json',
+                        help='Ruta al archivo result.json (default: whatsapp_export/result.json)')
+    parser.add_argument('-c', '--contacts', default='whatsapp_contacts.json',
+                        help='Ruta al archivo de contactos (default: whatsapp_contacts.json)')
+    parser.add_argument('-o', '--output', help='Archivo de salida (por defecto sobreescribe el original)')
+    parser.add_argument('-t', '--threshold', type=int, default=50,
+                        help='Umbral de confianza para aceptar resoluciones (0-100, default: 50)')
+    parser.add_argument('--no-backup', action='store_true',
+                        help='No crear copia de seguridad del archivo original')
     
-    # Create a backup of the original script
-    backup_script = "whatsapp_search.py.bak"
-    if not os.path.exists(backup_script):
-        try:
-            with open(original_script, 'r', encoding='utf-8') as f_in:
-                with open(backup_script, 'w', encoding='utf-8') as f_out:
-                    f_out.write(f_in.read())
-            print(f"Created backup of original script: {backup_script}")
-        except Exception as e:
-            print(f"Error creating backup: {e}")
-            return 1
+    args = parser.parse_args()
     
-    # Modify the original script to fix contact display
-    try:
-        with open(original_script, 'r', encoding='utf-8') as f:
-            content = f.read()
-        
-        # Add format_phone_number function if it doesn't exist
-        if "def format_phone_number(" not in content:
-            # Find a good place to insert the function (after imports)
-            insert_pos = content.find("def load_json_data(")
-            if insert_pos == -1:
-                print("Error: Could not find a good place to insert the function")
-                return 1
-            
-            # Define the function to insert
-            format_phone_function = """
-def format_phone_number(phone):
-    \"\"\"
-    Format a phone number to make it more readable.
+    process_file(
+        data_file=args.file,
+        contacts_file=args.contacts,
+        output_file=args.output,
+        threshold=args.threshold,
+        backup=not args.no_backup
+    )
     
-    Parameters:
-    - phone: The phone number string
-    
-    Returns:
-    - formatted: A more readable phone number
-    \"\"\"
-    if not phone or not isinstance(phone, str):
-        return "Unknown"
-    
-    # If it's already a name (contains letters), return as is
-    if any(c.isalpha() for c in phone):
-        return phone
-    
-    # Clean the phone number
-    digits = ''.join(c for c in phone if c.isdigit())
-    
-    # Format based on length
-    if len(digits) <= 4:
-        return phone  # Too short, return as is
-    elif len(digits) <= 7:
-        return f"{digits[:3]}-{digits[3:]}"  # Local number
-    elif len(digits) <= 10:
-        return f"({digits[:3]}) {digits[3:6]}-{digits[6:]}"  # National number
-    else:
-        # International number
-        country_code = digits[:-10]
-        area_code = digits[-10:-7]
-        prefix = digits[-7:-4]
-        line = digits[-4:]
-        return f"+{country_code} ({area_code}) {prefix}-{line}"
+    return 0
 
-"""
-            # Insert the function
-            content = content[:insert_pos] + format_phone_function + content[insert_pos:]
-        
-        # Modify the print_results function to format phone numbers
-        if "def print_results(" in content:
-            # Find the print_results function
-            start_pos = content.find("def print_results(")
-            if start_pos == -1:
-                print("Error: Could not find the print_results function")
-                return 1
-            
-            # Find the part where it prints the sender
-            sender_print_pos = content.find('print(f"Sender: {result', start_pos)
-            if sender_print_pos == -1:
-                print("Error: Could not find where the sender is printed")
-                return 1
-            
-            # Find the line end
-            line_end_pos = content.find('\n', sender_print_pos)
-            if line_end_pos == -1:
-                print("Error: Could not find the end of the line")
-                return 1
-            
-            # Replace the line with improved sender formatting
-            old_line = content[sender_print_pos:line_end_pos]
-            new_line = """        # Format sender name
-        sender_display = result['sender']
-        if sender_display == "Unknown" and isinstance(result['sender'], str) and result['sender'].isdigit():
-            sender_display = format_phone_number(result['sender'])
-        print(f"Sender: {sender_display}")"""
-            
-            content = content[:sender_print_pos] + new_line + content[line_end_pos:]
-        
-        # Write the modified content back to the file
-        with open(original_script, 'w', encoding='utf-8') as f:
-            f.write(content)
-        
-        print(f"Successfully modified {original_script} to improve contact display")
-        print("You can now run the script with:")
-        print(f"  python {original_script} --keywords \"your,keywords\" --file whatsapp_export/result.json")
-        
-        return 0
-    except Exception as e:
-        print(f"Error modifying script: {e}")
-        return 1
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -11,11 +11,11 @@ from .search_utils import print_results, save_results_to_file
 def search_command_handler(tool, args):
     """
     Handle the search command from the command line.
-    
+
     Parameters:
     - tool: The WhatsAppUnifiedTool instance
     - args: Command line arguments
-    
+
     Returns:
     - results: Search results
     """
@@ -35,17 +35,17 @@ def search_command_handler(tool, args):
         calculate_contact_relevance=args.contact_relevance
     )
 
-    print_results(results, show_context=True, show_contact_relevance=args.contact_relevance, contacts=tool.contacts)
-    
+    print_results(results, show_context=True, contacts=tool.contacts)
+
     return results
 
 def search_interactive_handler(tool):
     """
     Handle the search command in interactive mode.
-    
+
     Parameters:
     - tool: The WhatsAppUnifiedTool instance
-    
+
     Returns:
     - results: Search results
     """
@@ -93,5 +93,5 @@ def search_interactive_handler(tool):
     if save_option.lower() == 'y':
         filename = input("Enter filename to save results: ")
         save_results_to_file(results, filename, contacts=tool.contacts)
-    
+
     return results

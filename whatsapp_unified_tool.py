@@ -140,7 +140,7 @@ class WhatsAppUnifiedTool:
 
     def search(self, keywords=None, min_score=10, max_results=20, start_date=None,
               end_date=None, chat_filter=None, sender_filter=None, phone_filter=None,
-              calculate_contact_relevance=True):
+              calculate_contact_relevance=False):
         """Search through messages using keywords and filters"""
         if not self.data:
             print("No data loaded. Please load data first.")
@@ -710,7 +710,7 @@ def main():
                        help='Minimum relevance score for search (0-100)')
     parser.add_argument('--max-results', '-r', type=int, default=20,
                        help='Maximum number of results to show')
-    parser.add_argument('--contact-relevance', action='store_true', default=True,
+    parser.add_argument('--contact-relevance', action='store_true', default=False,
                        help='Calculate and show contact relevance scores')
     parser.add_argument('--no-contact-relevance', action='store_false', dest='contact_relevance',
                        help='Do not calculate contact relevance scores')

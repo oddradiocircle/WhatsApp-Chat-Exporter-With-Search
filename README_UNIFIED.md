@@ -7,7 +7,7 @@ This tool combines all the functionality of WhatsApp Chat Exporter's search and 
 ### Basic Features
 - **Keyword Search**: Find messages containing specific keywords with relevance scoring
 - **Advanced Filtering**: Filter by chat, sender, phone number, and date range
-- **Contact Information**: Enhanced display of phone numbers and contact names
+- **Contact Information**: Enhanced display of phone numbers and contact namesy
 - **Message Context**: See surrounding messages for better context understanding
 - **Result Saving**: Save search and analysis results to JSON files
 
