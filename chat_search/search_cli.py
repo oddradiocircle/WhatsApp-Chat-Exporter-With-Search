@@ -38,7 +38,8 @@ def search_command_handler(tool, args):
         sender_filter=args.sender,
         phone_filter=args.phone,
         calculate_contact_relevance=args.contact_relevance,
-        preprocess_data=preprocess_data
+        preprocess_data=preprocess_data,
+        sort_criteria=args.sort_by
     )
 
     print_results(results, show_context=True, contacts=tool.contacts)
@@ -69,6 +70,41 @@ def search_interactive_handler(tool):
     preprocess = input("Preprocesar datos para mejorar la búsqueda? (s/n, default s): ").lower() != 'n'
     calculate_contact_relevance = input("Calcular relevancia de contactos? (s/n, default s): ").lower() != 'n'
 
+    # Ask for sort criteria
+    from .sort_utils import get_available_sort_criteria
+
+    # Show available sort criteria
+    print("\nAvailable sort criteria:")
+    criteria_dict = get_available_sort_criteria()
+    for i, (key, desc) in enumerate(criteria_dict.items(), 1):
+        print(f"{i}. {key}: {desc}")
+
+    # Ask for up to 3 sort criteria
+    sort_criteria = []
+
+    print("\nEnter up to 3 sort criteria (leave empty to use default 'relevance'):")
+    for i in range(1, 4):
+        criterion = input(f"Sort criterion {i} (name or number, empty to skip): ").strip()
+
+        if not criterion:
+            # Skip if empty
+            continue
+
+        # Check if it's a number
+        if criterion.isdigit() and 1 <= int(criterion) <= len(criteria_dict):
+            # Convert number to criterion name
+            criterion = list(criteria_dict.keys())[int(criterion) - 1]
+
+        # Validate criterion
+        if criterion in criteria_dict:
+            sort_criteria.append(criterion)
+        else:
+            print(f"Invalid criterion '{criterion}'. Skipping.")
+
+    # If no criteria selected, use default
+    if not sort_criteria:
+        sort_criteria = ['relevance']
+
     # Clean up filters
     if not chat_filter:
         chat_filter = None
@@ -92,7 +128,8 @@ def search_interactive_handler(tool):
         sender_filter=sender_filter,
         phone_filter=phone_filter,
         calculate_contact_relevance=calculate_contact_relevance,
-        preprocess_data=preprocess
+        preprocess_data=preprocess,
+        sort_criteria=sort_criteria
     )
 
     # Show results

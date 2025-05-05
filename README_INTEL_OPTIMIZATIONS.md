@@ -11,6 +11,15 @@ The WhatsApp Unified Tool has been optimized to take advantage of Intel hardware
 - Intel UHD Graphics
 - Intel HD Graphics
 
+## Current Status
+
+The following Intel optimizations are currently enabled:
+
+- ✅ **scikit-learn-intelex**: Successfully installed and patched
+- ✅ **oneAPI Toolkit**: Successfully installed with MKL, IPP, TBB, and Compiler components
+- ❌ **Intel Extension for PyTorch (IPEX)**: Not installed (installation scripts provided)
+- ❌ **MKL integration with NumPy**: Not enabled (setup scripts provided)
+
 ## Optimizations Implemented
 
 ### 1. Intel Distribution for Python
@@ -66,9 +75,33 @@ pip install -r requirements.txt
 
 # Install Intel optimizations (recommended)
 python install_ml_dependencies.py
+
+# Enable missing Intel optimizations (IPEX and MKL)
+python enable_missing_intel_optimizations.py
+
+# Verify Intel optimizations
+python verify_intel_optimizations.py
 ```
 
-The `install_ml_dependencies.py` script will automatically detect your hardware and install the appropriate optimizations.
+The `install_ml_dependencies.py` script will automatically detect your hardware and install the appropriate optimizations. The `enable_missing_intel_optimizations.py` script focuses on installing IPEX and enabling MKL support.
+
+### Running with Intel Optimizations
+
+The WhatsApp Unified Tool now **automatically detects and enables Intel optimizations** at startup. You can run it directly:
+
+```bash
+# Run with automatic Intel optimizations
+python whatsapp_unified_tool.py --file whatsapp_export/result.json --contacts whatsapp_contacts.json --google-contacts "path/to/contacts.csv" --interactive
+```
+
+Alternatively, you can use the provided batch script for maximum optimization:
+
+```bash
+# Run with maximum Intel optimizations
+run_with_intel_optimizations.bat whatsapp_unified_tool.py --interactive
+```
+
+The batch script sets up the Intel oneAPI environment before running your Python code, which may provide additional performance benefits.
 
 ## Hardware Detection
 
@@ -94,6 +127,21 @@ If you encounter issues with the Intel optimizations:
 1. Make sure you have the latest Intel drivers installed
 2. Update to the latest version of the tool
 3. Try running with standard dependencies if optimizations cause issues
+4. Run `check_intel_hardware.py` to diagnose your system configuration
+5. For IPEX installation issues, try the specific versions in `enable_missing_intel_optimizations.py`
+6. For MKL issues, make sure to run your code with the oneAPI environment set up
+
+### Common Issues and Solutions
+
+#### IPEX Installation Fails
+- Try installing a specific version compatible with your PyTorch version
+- Try installing the CPU-only version: `pip install intel-extension-for-pytorch==2.0.100+cpu`
+- Try installing from Intel's channel: `pip install intel-extension-for-pytorch -f https://developer.intel.com/ipex-whl-stable-cpu`
+
+#### MKL Not Detected
+- Make sure oneAPI is installed and properly set up
+- Run your code using the `run_with_intel_optimizations.bat` script
+- Try reinstalling NumPy after setting up the oneAPI environment
 
 ## Compatibility
 

@@ -83,14 +83,52 @@ def check_intel_optimizations():
     if platform.system() == "Windows":
         try:
             import torch
-            if torch.cuda.is_available():
+
+            # First check for XPU (Intel GPU) support in PyTorch
+            if hasattr(torch, "xpu") and callable(getattr(torch.xpu, "is_available", None)):
+                if torch.xpu.is_available():
+                    intel_optimizations['intel_gpu'] = True
+                    print("Intel GPU detected via torch.xpu")
+
+            # Fallback to CUDA detection for older PyTorch versions
+            elif torch.cuda.is_available():
                 for i in range(torch.cuda.device_count()):
                     device_name = torch.cuda.get_device_name(i).lower()
                     if 'intel' in device_name and ('iris' in device_name or 'uhd' in device_name or 'hd graphics' in device_name):
                         intel_optimizations['intel_gpu'] = True
+                        print(f"Intel GPU detected: {device_name}")
                         break
-        except (ImportError, AttributeError):
-            pass
+
+            # Try to detect Intel GPU using Windows-specific methods
+            if not intel_optimizations['intel_gpu']:
+                try:
+                    # Create a temporary file for dxdiag output
+                    temp_file = "temp_dxdiag.txt"
+                    import subprocess
+                    subprocess.run(["dxdiag", "/t", temp_file],
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
+
+                    # Wait for the file to be created
+                    import time
+                    time.sleep(2)
+
+                    if os.path.exists(temp_file):
+                        with open(temp_file, "r", encoding="utf-8", errors="ignore") as f:
+                            content = f.read().lower()
+
+                            # Check for Intel GPU
+                            if "intel" in content and any(gpu in content for gpu in ["iris", "uhd", "hd graphics"]):
+                                intel_optimizations['intel_gpu'] = True
+                                print("Intel GPU detected via dxdiag")
+
+                        # Clean up
+                        os.remove(temp_file)
+                except Exception as e:
+                    print(f"Error detecting GPU via dxdiag: {e}")
+
+        except (ImportError, AttributeError) as e:
+            print(f"Error detecting Intel GPU: {e}")
 
     return intel_optimizations
 
@@ -99,6 +137,63 @@ ML_AVAILABLE = check_ml_dependencies()
 
 # Check for Intel optimizations
 INTEL_OPTIMIZATIONS = check_intel_optimizations()
+
+
+# Check for Intel oneAPI
+def check_oneapi_environment():
+    """
+    Check for Intel oneAPI environment and set it up if available.
+
+    Returns:
+    - dict with oneAPI information
+    """
+    oneapi_info = {
+        "available": False,
+        "path": None,
+        "components": {}
+    }
+
+    # Check common oneAPI installation paths
+    oneapi_paths = []
+
+    if platform.system() == "Windows":
+        oneapi_paths = [
+            r"C:\Program Files (x86)\Intel\oneAPI",
+            r"C:\Program Files\Intel\oneAPI"
+        ]
+    elif platform.system() == "Linux":
+        oneapi_paths = [
+            "/opt/intel/oneapi",
+            os.path.expanduser("~/intel/oneapi")
+        ]
+    elif platform.system() == "Darwin":  # macOS
+        oneapi_paths = [
+            "/opt/intel/oneapi",
+            os.path.expanduser("~/intel/oneapi")
+        ]
+
+    # Check if any of the paths exist
+    for path in oneapi_paths:
+        if os.path.exists(path):
+            oneapi_info["available"] = True
+            oneapi_info["path"] = path
+
+            # Check for common components
+            components = ["mkl", "ipp", "tbb", "compiler", "pytorch"]
+            for component in components:
+                component_path = os.path.join(path, component)
+                if os.path.exists(component_path):
+                    oneapi_info["components"][component] = {
+                        "available": True,
+                        "path": component_path
+                    }
+
+            break
+
+    return oneapi_info
+
+# Check for oneAPI
+ONEAPI_INFO = check_oneapi_environment()
 
 # Import ML dependencies if available
 if ML_AVAILABLE:

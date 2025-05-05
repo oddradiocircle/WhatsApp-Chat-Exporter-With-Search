@@ -12,13 +12,95 @@ Features:
 - ML analysis (sentiment, topics, semantic search, entities, clustering)
 - Interactive and command-line modes
 - Result saving functionality
+- Intel hardware optimizations
 """
 
 import argparse
 import os
+import sys
+import platform
+import subprocess
 from tqdm import tqdm
 import traceback
 from datetime import datetime
+
+# Setup Intel optimizations automatically
+def setup_intel_optimizations():
+    """Set up Intel optimizations automatically at startup"""
+    print("Checking for Intel hardware and setting up optimizations...")
+
+    # Check if we're running on Intel hardware
+    is_intel_cpu = "intel" in platform.processor().lower()
+
+    if is_intel_cpu:
+        print("Intel CPU detected. Enabling optimizations...")
+
+        # Check for oneAPI installation
+        oneapi_path = None
+        if platform.system() == "Windows":
+            possible_paths = [
+                r"C:\Program Files (x86)\Intel\oneAPI",
+                r"C:\Program Files\Intel\oneAPI"
+            ]
+            for path in possible_paths:
+                if os.path.exists(path):
+                    oneapi_path = path
+                    break
+
+        if oneapi_path:
+            print(f"Intel oneAPI detected at: {oneapi_path}")
+
+            # Set up environment variables for oneAPI
+            setvars_path = os.path.join(oneapi_path, "setvars.bat")
+            if os.path.exists(setvars_path):
+                print("Setting up oneAPI environment...")
+
+                # Create a temporary batch file to capture environment variables
+                temp_batch = "temp_oneapi_env.bat"
+                with open(temp_batch, "w") as f:
+                    f.write(f'@echo off\n')
+                    f.write(f'call "{setvars_path}" > nul\n')
+                    f.write(f'set > oneapi_env.txt\n')
+
+                # Run the batch file to capture environment variables
+                subprocess.run([temp_batch], shell=True)
+
+                # Read the environment variables and set them in the current process
+                if os.path.exists("oneapi_env.txt"):
+                    with open("oneapi_env.txt", "r") as f:
+                        for line in f:
+                            if "=" in line:
+                                name, value = line.strip().split("=", 1)
+                                os.environ[name] = value
+
+                    # Clean up
+                    os.remove("oneapi_env.txt")
+
+                # Clean up
+                if os.path.exists(temp_batch):
+                    os.remove(temp_batch)
+
+                print("Intel oneAPI environment set up successfully.")
+
+        # Enable scikit-learn-intelex if available
+        try:
+            import sklearnex
+            sklearnex.patch_sklearn()
+            print("Intel Extension for Scikit-learn enabled.")
+        except ImportError:
+            print("Intel Extension for Scikit-learn not available.")
+
+        # Try to enable Intel Extension for PyTorch if available
+        try:
+            import intel_extension_for_pytorch as ipex
+            print("Intel Extension for PyTorch enabled.")
+        except ImportError:
+            print("Intel Extension for PyTorch not available.")
+
+    print("Intel optimization setup complete.")
+
+# Run Intel optimization setup at import time
+setup_intel_optimizations()
 
 # Import core functionality
 from whatsapp_core import (
@@ -27,6 +109,17 @@ from whatsapp_core import (
     format_phone_number,
     install_ml_dependencies
 )
+
+# Import Google Contacts functionality
+try:
+    from google_contacts import (
+        parse_google_contacts_csv,
+        merge_contacts,
+        find_matching_contact
+    )
+    GOOGLE_CONTACTS_AVAILABLE = True
+except ImportError:
+    GOOGLE_CONTACTS_AVAILABLE = False
 
 # Import search functionality
 from chat_search import (
@@ -47,12 +140,14 @@ ML_AVAILABLE = check_ml_dependencies()
 class WhatsAppUnifiedTool:
     """Unified WhatsApp Chat Analysis Tool"""
 
-    def __init__(self, data_file=None, contacts_file=None):
+    def __init__(self, data_file=None, contacts_file=None, google_contacts_file=None):
         """Initialize the tool with data and contacts files"""
         self.data = None
         self.contacts = {}
+        self.google_contacts = {}
         self.data_file = data_file
         self.contacts_file = contacts_file
+        self.google_contacts_file = google_contacts_file
         self.embeddings_cache = {}
         self.embeddings_model = None
         self.embeddings_cache_file = None
@@ -69,6 +164,9 @@ class WhatsAppUnifiedTool:
         if contacts_file:
             self.load_contacts(contacts_file)
 
+        if google_contacts_file:
+            self.load_google_contacts(google_contacts_file)
+
     def load_data(self, file_path):
         """Load WhatsApp chat data from a JSON file"""
         self.data_file = file_path
@@ -79,7 +177,27 @@ class WhatsAppUnifiedTool:
         """Load contact information from a JSON file"""
         self.contacts_file = file_path
         self.contacts = load_contacts(file_path)
+
+        # If Google contacts are loaded, merge them with WhatsApp contacts
+        if self.google_contacts:
+            self.contacts = merge_contacts(self.contacts, self.google_contacts)
+
         return len(self.contacts) > 0
+
+    def load_google_contacts(self, file_path):
+        """Load contact information from a Google Contacts CSV file"""
+        if not GOOGLE_CONTACTS_AVAILABLE:
+            print("Google Contacts support is not available. Make sure google_contacts.py is in the same directory.")
+            return False
+
+        self.google_contacts_file = file_path
+        self.google_contacts = parse_google_contacts_csv(file_path)
+
+        # Merge with existing contacts if any
+        if self.contacts:
+            self.contacts = merge_contacts(self.contacts, self.google_contacts)
+
+        return len(self.google_contacts) > 0
 
 
 
@@ -165,7 +283,8 @@ class WhatsAppUnifiedTool:
 
     def search(self, keywords=None, min_score=10, max_results=20, start_date=None,
               end_date=None, chat_filter=None, sender_filter=None, phone_filter=None,
-              calculate_contact_relevance=False, preprocess_data=True, use_cache=True):
+              calculate_contact_relevance=False, preprocess_data=True, use_cache=True,
+              sort_criteria=None):
         """
         Search through messages using keywords and filters.
         Optimized for performance with large datasets.
@@ -182,6 +301,9 @@ class WhatsAppUnifiedTool:
         - calculate_contact_relevance: Whether to calculate contact and chat relevance
         - preprocess_data: Whether to preprocess data for better search results
         - use_cache: Whether to use cached results for faster repeated searches
+        - sort_criteria: List of criteria to sort results by (up to 3)
+                        Options: 'relevance' (default), 'date_asc', 'date_desc', 'sender',
+                        'chat', 'length_asc', 'length_desc', 'keyword_density', 'keyword_count'
 
         Returns:
         - List of matching messages or dictionary with results and relevance information
@@ -375,11 +497,20 @@ class WhatsAppUnifiedTool:
 
             # Sort and trim results after each batch
             if results:
+                # Use default sorting by relevance for intermediate results
                 results.sort(key=lambda x: x['score'], reverse=True)
                 results = results[:max_results * 2]  # Keep twice as many as needed for now
 
-        # Final sort and limit
-        results.sort(key=lambda x: x['score'], reverse=True)
+        # Apply custom sorting if specified
+        if sort_criteria:
+            # Import sort utilities
+            from chat_search.sort_utils import sort_results
+            results = sort_results(results, sort_criteria)
+        else:
+            # Default sort by relevance
+            results.sort(key=lambda x: x['score'], reverse=True)
+
+        # Limit to max_results
         results = results[:max_results]
 
         # Now add context only for the top results
@@ -521,7 +652,8 @@ class WhatsAppUnifiedTool:
                 'results': results,
                 'contact_relevance': sorted_contacts,
                 'chat_relevance': sorted_chats,
-                'most_relevant_contact': most_relevant_contact
+                'most_relevant_contact': most_relevant_contact,
+                'sort_criteria': sort_criteria
             }
 
             # Save results to cache if caching is enabled
@@ -542,12 +674,21 @@ class WhatsAppUnifiedTool:
 
             return final_results
 
+        # Si se especificaron criterios de ordenación, incluirlos en los resultados
+        if sort_criteria:
+            simple_results = {
+                'results': results,
+                'sort_criteria': sort_criteria
+            }
+        else:
+            simple_results = results
+
         # Save simple results to cache if caching is enabled
         if use_cache:
             try:
                 # Create cache data with a hash of the current data for validation
                 cache_data = {
-                    'results': results,
+                    'results': simple_results,
                     'data_hash': hashlib.md5(str(self.data).encode()).hexdigest(),
                     'timestamp': time.time()
                 }
@@ -558,7 +699,7 @@ class WhatsAppUnifiedTool:
             except Exception as e:
                 print(f"Warning: Could not cache results: {e}")
 
-        return results
+        return simple_results
 
     # ML Analysis Functions
     def analyze_sentiment(self, messages=None, filters=None):
@@ -698,6 +839,46 @@ def analyze_relevant_contacts(tool):
     min_score = float(input("Puntuación mínima de relevancia (0-100, default 5): ") or 5)
     max_results = int(input("Número máximo de contactos a mostrar (default 20): ") or 20)
 
+    # Solicitar criterios de ordenación
+    from chat_search.sort_utils import get_available_sort_criteria
+
+    # Mostrar criterios disponibles
+    print("\nCriterios de ordenación disponibles:")
+    criteria_dict = get_available_sort_criteria()
+    for i, (key, desc) in enumerate(criteria_dict.items(), 1):
+        print(f"{i}. {key}: {desc}")
+
+    # Preguntar si se desea ordenar por algún criterio específico
+    use_sort = input("\n¿Deseas ordenar los resultados por algún criterio específico? (s/n): ").lower() == 's'
+
+    sort_criteria = None
+    if use_sort:
+        # Solicitar hasta 3 criterios de ordenación
+        sort_criteria = []
+
+        print("\nIngresa hasta 3 criterios de ordenación (deja vacío para usar relevancia por defecto):")
+        for i in range(1, 4):
+            criterion = input(f"Criterio {i} (nombre o número, vacío para omitir): ").strip()
+
+            if not criterion:
+                # Omitir si está vacío
+                continue
+
+            # Verificar si es un número
+            if criterion.isdigit() and 1 <= int(criterion) <= len(criteria_dict):
+                # Convertir número a nombre de criterio
+                criterion = list(criteria_dict.keys())[int(criterion) - 1]
+
+            # Validar criterio
+            if criterion in criteria_dict:
+                sort_criteria.append(criterion)
+            else:
+                print(f"Criterio inválido '{criterion}'. Omitiendo.")
+
+        # Si no se seleccionó ningún criterio, usar relevancia por defecto
+        if not sort_criteria:
+            sort_criteria = ['relevance']
+
     # Limpiar filtros
     if not chat_filter:
         chat_filter = None
@@ -717,7 +898,8 @@ def analyze_relevant_contacts(tool):
         end_date=end_date,
         chat_filter=chat_filter,
         calculate_contact_relevance=True,
-        preprocess_data=True
+        preprocess_data=True,
+        sort_criteria=sort_criteria
     )
 
     # Verificar si hay resultados
@@ -765,7 +947,13 @@ def analyze_relevant_contacts(tool):
 
         # Exportar resultados
         from chat_search import save_results_to_file
-        save_results_to_file({'contact_relevance': contact_relevance}, filename, contacts=tool.contacts)
+
+        # Convertir la lista de tuplas a un diccionario para evitar errores de índice
+        contact_dict = {}
+        for contact_id, data in contact_relevance:
+            contact_dict[contact_id] = data
+
+        save_results_to_file({'contact_relevance': contact_dict}, filename, contacts=tool.contacts)
         print(f"Resultados exportados a {filename}")
 
 def analyze_messages(tool):
@@ -792,6 +980,9 @@ def analyze_messages(tool):
     end_date = input("Fecha de fin (YYYY-MM-DD, opcional): ")
     keywords = input("Palabras clave (separadas por comas, opcional): ")
 
+    # Criterios de ordenación
+    sort_criteria = None
+
     # Limpiar filtros
     if not chat_filter:
         chat_filter = None
@@ -812,6 +1003,45 @@ def analyze_messages(tool):
         min_score = float(input("Puntuación mínima de relevancia (0-100, default 5): ") or 5)
         max_results = int(input("Número máximo de mensajes a mostrar (default 50): ") or 50)
 
+        # Solicitar criterios de ordenación
+        from chat_search.sort_utils import get_available_sort_criteria
+
+        # Mostrar criterios disponibles
+        print("\nCriterios de ordenación disponibles:")
+        criteria_dict = get_available_sort_criteria()
+        for i, (key, desc) in enumerate(criteria_dict.items(), 1):
+            print(f"{i}. {key}: {desc}")
+
+        # Preguntar si se desea ordenar por algún criterio específico
+        use_sort = input("\n¿Deseas ordenar los resultados por algún criterio específico? (s/n): ").lower() == 's'
+
+        if use_sort:
+            # Solicitar hasta 3 criterios de ordenación
+            sort_criteria = []
+
+            print("\nIngresa hasta 3 criterios de ordenación (deja vacío para usar relevancia por defecto):")
+            for i in range(1, 4):
+                criterion = input(f"Criterio {i} (nombre o número, vacío para omitir): ").strip()
+
+                if not criterion:
+                    # Omitir si está vacío
+                    continue
+
+                # Verificar si es un número
+                if criterion.isdigit() and 1 <= int(criterion) <= len(criteria_dict):
+                    # Convertir número a nombre de criterio
+                    criterion = list(criteria_dict.keys())[int(criterion) - 1]
+
+                # Validar criterio
+                if criterion in criteria_dict:
+                    sort_criteria.append(criterion)
+                else:
+                    print(f"Criterio inválido '{criterion}'. Omitiendo.")
+
+            # Si no se seleccionó ningún criterio, usar relevancia por defecto
+            if not sort_criteria:
+                sort_criteria = ['relevance']
+
         results = tool.search(
             keywords=keywords,
             min_score=min_score,
@@ -822,7 +1052,8 @@ def analyze_messages(tool):
             sender_filter=sender_filter,
             phone_filter=phone_filter,
             calculate_contact_relevance=False,
-            preprocess_data=True
+            preprocess_data=True,
+            sort_criteria=sort_criteria
         )
 
         if not results:
@@ -919,6 +1150,46 @@ def analyze_relevant_chats(tool):
     min_score = float(input("Puntuación mínima de relevancia (0-100, default 5): ") or 5)
     max_results = int(input("Número máximo de chats a mostrar (default 20): ") or 20)
 
+    # Solicitar criterios de ordenación
+    from chat_search.sort_utils import get_available_sort_criteria
+
+    # Mostrar criterios disponibles
+    print("\nCriterios de ordenación disponibles:")
+    criteria_dict = get_available_sort_criteria()
+    for i, (key, desc) in enumerate(criteria_dict.items(), 1):
+        print(f"{i}. {key}: {desc}")
+
+    # Preguntar si se desea ordenar por algún criterio específico
+    use_sort = input("\n¿Deseas ordenar los resultados por algún criterio específico? (s/n): ").lower() == 's'
+
+    sort_criteria = None
+    if use_sort:
+        # Solicitar hasta 3 criterios de ordenación
+        sort_criteria = []
+
+        print("\nIngresa hasta 3 criterios de ordenación (deja vacío para usar relevancia por defecto):")
+        for i in range(1, 4):
+            criterion = input(f"Criterio {i} (nombre o número, vacío para omitir): ").strip()
+
+            if not criterion:
+                # Omitir si está vacío
+                continue
+
+            # Verificar si es un número
+            if criterion.isdigit() and 1 <= int(criterion) <= len(criteria_dict):
+                # Convertir número a nombre de criterio
+                criterion = list(criteria_dict.keys())[int(criterion) - 1]
+
+            # Validar criterio
+            if criterion in criteria_dict:
+                sort_criteria.append(criterion)
+            else:
+                print(f"Criterio inválido '{criterion}'. Omitiendo.")
+
+        # Si no se seleccionó ningún criterio, usar relevancia por defecto
+        if not sort_criteria:
+            sort_criteria = ['relevance']
+
     # Limpiar filtros
     if not start_date:
         start_date = None
@@ -935,7 +1206,8 @@ def analyze_relevant_chats(tool):
         start_date=start_date,
         end_date=end_date,
         calculate_contact_relevance=True,  # Esto también calcula relevancia de chats
-        preprocess_data=True
+        preprocess_data=True,
+        sort_criteria=sort_criteria
     )
 
     # Verificar si hay resultados
@@ -1010,7 +1282,13 @@ def analyze_relevant_chats(tool):
 
         # Exportar resultados
         from chat_search import save_results_to_file
-        save_results_to_file({'chat_relevance': chat_relevance}, filename, contacts=tool.contacts)
+
+        # Convertir la lista de tuplas a un diccionario para evitar errores de índice
+        chat_dict = {}
+        for chat_id, data in chat_relevance:
+            chat_dict[chat_id] = data
+
+        save_results_to_file({'chat_relevance': chat_dict}, filename, contacts=tool.contacts)
         print(f"Resultados exportados a {filename}")
 
 
@@ -1055,6 +1333,46 @@ def analyze_sales_prospects(tool):
     min_score = float(input("Puntuación mínima de relevancia (0-100, default 5): ") or 5)
     max_results = int(input("Número máximo de prospectos a mostrar (default 20): ") or 20)
 
+    # Solicitar criterios de ordenación
+    from chat_search.sort_utils import get_available_sort_criteria
+
+    # Mostrar criterios disponibles
+    print("\nCriterios de ordenación disponibles:")
+    criteria_dict = get_available_sort_criteria()
+    for i, (key, desc) in enumerate(criteria_dict.items(), 1):
+        print(f"{i}. {key}: {desc}")
+
+    # Preguntar si se desea ordenar por algún criterio específico
+    use_sort = input("\n¿Deseas ordenar los resultados por algún criterio específico? (s/n): ").lower() == 's'
+
+    sort_criteria = None
+    if use_sort:
+        # Solicitar hasta 3 criterios de ordenación
+        sort_criteria = []
+
+        print("\nIngresa hasta 3 criterios de ordenación (deja vacío para usar relevancia por defecto):")
+        for i in range(1, 4):
+            criterion = input(f"Criterio {i} (nombre o número, vacío para omitir): ").strip()
+
+            if not criterion:
+                # Omitir si está vacío
+                continue
+
+            # Verificar si es un número
+            if criterion.isdigit() and 1 <= int(criterion) <= len(criteria_dict):
+                # Convertir número a nombre de criterio
+                criterion = list(criteria_dict.keys())[int(criterion) - 1]
+
+            # Validar criterio
+            if criterion in criteria_dict:
+                sort_criteria.append(criterion)
+            else:
+                print(f"Criterio inválido '{criterion}'. Omitiendo.")
+
+        # Si no se seleccionó ningún criterio, usar relevancia por defecto
+        if not sort_criteria:
+            sort_criteria = ['relevance']
+
     # Limpiar filtros
     if not start_date:
         start_date = None
@@ -1077,7 +1395,8 @@ def analyze_sales_prospects(tool):
             start_date=start_date,
             end_date=end_date,
             calculate_contact_relevance=True,
-            preprocess_data=True
+            preprocess_data=True,
+            sort_criteria=sort_criteria
         )
 
         # Verificar si hay resultados
@@ -1271,8 +1590,14 @@ def analyze_sales_prospects(tool):
 
         # Exportar resultados
         from chat_search import save_results_to_file
+
+        # Convertir la lista de tuplas a un diccionario para evitar errores de índice
+        prospects_dict = {}
+        for contact_id, data in sorted_prospects:
+            prospects_dict[contact_id] = data
+
         export_data = {
-            'prospects': dict(sorted_prospects),
+            'prospects': prospects_dict,
             'categories': categories,
             'analysis_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'filters': {
@@ -1301,9 +1626,10 @@ def interactive_mode(tool):
         print("11. Analyze messages")
         print("12. Analyze relevant chats")
         print("13. Analizar prospectos de ventas")
-        print("14. Exit")
+        print("14. Manage Google Contacts")
+        print("15. Exit")
 
-        choice = input("\nEnter your choice (1-14): ")
+        choice = input("\nEnter your choice (1-15): ")
 
         if choice == '1':
             # Search by keywords using the search_interactive_handler from chat_search module
@@ -1588,12 +1914,64 @@ def interactive_mode(tool):
             analyze_sales_prospects(tool)
 
         elif choice == '14':
+            # Manage Google Contacts
+            print("\n=== Manage Google Contacts ===")
+            print("1. Load Google Contacts CSV file")
+            print("2. Show loaded Google Contacts")
+            print("3. Back to main menu")
+
+            subchoice = input("\nEnter your choice (1-3): ")
+
+            if subchoice == '1':
+                # Load Google Contacts CSV file
+                if not GOOGLE_CONTACTS_AVAILABLE:
+                    print("Google Contacts support is not available. Make sure google_contacts.py is in the same directory.")
+                    continue
+
+                file_path = input("Enter path to Google Contacts CSV file: ")
+                if file_path:
+                    success = tool.load_google_contacts(file_path)
+                    if success:
+                        print(f"Successfully loaded {len(tool.google_contacts)} contacts from Google Contacts CSV.")
+                    else:
+                        print("Failed to load Google Contacts CSV file.")
+                else:
+                    print("No file path provided.")
+
+            elif subchoice == '2':
+                # Show loaded Google Contacts
+                if not tool.google_contacts:
+                    print("No Google Contacts loaded. Use option 1 to load a Google Contacts CSV file.")
+                    continue
+
+                print(f"\nLoaded {len(tool.google_contacts)} Google Contacts:")
+
+                # Show a sample of contacts
+                sample_size = min(10, len(tool.google_contacts))
+                sample_contacts = list(tool.google_contacts.items())[:sample_size]
+
+                for i, (phone, contact) in enumerate(sample_contacts, 1):
+                    print(f"\n{i}. {contact['display_name']}")
+                    print(f"   Phone: {contact.get('phone', 'N/A')}")
+                    print(f"   Raw Phone: {contact.get('phone_raw', 'N/A')}")
+
+                if len(tool.google_contacts) > sample_size:
+                    print(f"\n... and {len(tool.google_contacts) - sample_size} more contacts.")
+
+            elif subchoice == '3':
+                # Back to main menu
+                continue
+
+            else:
+                print("Invalid choice. Please enter a number between 1 and 3.")
+
+        elif choice == '15':
             # Exit
             print("Goodbye!")
             break
 
         else:
-            print("Invalid choice. Please enter a number between 1 and 14.")
+            print("Invalid choice. Please enter a number between 1 and 15.")
 
 
 def main():
@@ -1608,6 +1986,8 @@ def main():
                        help='Path to WhatsApp chat JSON file')
     parser.add_argument('--contacts', '-c', default='whatsapp_contacts.json',
                        help='Path to contacts JSON file')
+    parser.add_argument('--google-contacts', '-g',
+                       help='Path to Google Contacts CSV export file')
     parser.add_argument('--interactive', '-i', action='store_true',
                        help='Run in interactive mode')
 
@@ -1633,6 +2013,10 @@ def main():
                        help='Preprocesar datos para mejorar la búsqueda (default: True)')
     parser.add_argument('--no-preprocess', action='store_false', dest='preprocess_data',
                        help='No preprocesar datos para la búsqueda')
+    parser.add_argument('--sort-by', nargs='+',
+                       help='Criteria to sort results by (up to 3). Options: relevance (default), '
+                            'date_asc, date_desc, sender, chat, length_asc, length_desc, '
+                            'keyword_density, keyword_count')
 
     # ML options
     parser.add_argument('--query', '-q', help='Query for semantic search')
@@ -1674,7 +2058,7 @@ def main():
                 ML_AVAILABLE = True
 
     # Initialize tool
-    tool = WhatsAppUnifiedTool(args.file, args.contacts)
+    tool = WhatsAppUnifiedTool(args.file, args.contacts, args.google_contacts)
 
     # Check if we're in interactive mode
     if args.interactive:

@@ -24,6 +24,7 @@ This tool combines all the functionality of WhatsApp Chat Exporter's search and 
 - Python 3.6 or higher
 - WhatsApp chat data exported using WhatsApp-Chat-Exporter (result.json file)
 - Contact information (optional, whatsapp_contacts.json file)
+- Google Contacts CSV export (optional, for enhanced contact resolution)
 - ML dependencies for advanced features (optional, can be installed on demand)
 
 ## Installation
@@ -77,7 +78,13 @@ This will start an interactive session where you can:
 6. Extract named entities
 7. Cluster messages
 8. Run a complete analysis
-9. Exit the program
+9. Manage contact corrections
+10. Analyze relevant contacts
+11. Analyze messages
+12. Analyze relevant chats
+13. Analyze sales prospects
+14. Manage Google Contacts
+15. Exit the program
 
 ### Command-Line Mode
 
@@ -101,6 +108,7 @@ python whatsapp_unified_tool.py --mode search --keywords "meeting,project" --fil
 
 - `--file`, `-f`: Path to the WhatsApp chat JSON file (default: whatsapp_export/result.json)
 - `--contacts`, `-c`: Path to the contacts JSON file (default: whatsapp_contacts.json)
+- `--google-contacts`, `-g`: Path to Google Contacts CSV export file
 - `--interactive`, `-i`: Run in interactive mode
 - `--output`, `-o`: Save results to a file
 
@@ -109,6 +117,16 @@ python whatsapp_unified_tool.py --mode search --keywords "meeting,project" --fil
 - `--keywords`, `-k`: Comma-separated list of keywords to search for
 - `--min-score`, `-m`: Minimum relevance score (0-100, default: 10)
 - `--max-results`, `-r`: Maximum number of results to show (default: 20)
+- `--sort-by`: Criteria to sort results by (up to 3). Options:
+  - `relevance`: Relevancia (puntuación más alta primero) - Default
+  - `date_asc`: Fecha (más antiguos primero)
+  - `date_desc`: Fecha (más recientes primero)
+  - `sender`: Remitente (alfabético)
+  - `chat`: Chat (alfabético)
+  - `length_asc`: Longitud del mensaje (más cortos primero)
+  - `length_desc`: Longitud del mensaje (más largos primero)
+  - `keyword_density`: Densidad de palabras clave (mayor densidad primero)
+  - `keyword_count`: Cantidad de palabras clave coincidentes (mayor cantidad primero)
 
 #### ML Options
 
@@ -130,6 +148,12 @@ python whatsapp_unified_tool.py --mode search --keywords "meeting,project" --fil
 
 ```bash
 python whatsapp_unified_tool.py --mode search --keywords "meeting,project" --min-score 20
+```
+
+### Search with Custom Sorting
+
+```bash
+python whatsapp_unified_tool.py --mode search --keywords "meeting,project" --sort-by date_desc keyword_density
 ```
 
 ### Sentiment Analysis
@@ -180,6 +204,16 @@ Search results include:
 - Date and time
 - Chat name
 - Context messages (previous and next)
+- Sort criteria used (if custom sorting was applied)
+
+#### Custom Sorting
+
+Results can be sorted using up to three criteria:
+- **Relevance**: Default sorting by relevance score
+- **Date**: Chronological order (ascending or descending)
+- **Sender/Chat**: Alphabetical order by sender or chat name
+- **Message Length**: Short to long or long to short
+- **Keyword Metrics**: By keyword density or count of matched keywords
 
 ### Sentiment Analysis
 
@@ -221,6 +255,27 @@ Message clustering:
 - Shows distribution of messages across clusters
 - Helps identify patterns and common themes
 
+## Google Contacts Integration
+
+The WhatsApp Unified Tool now supports importing contact information from Google Contacts CSV exports. This feature helps to:
+
+1. Resolve phone numbers to contact names more accurately
+2. Display proper contact names instead of phone numbers in search results
+3. Improve contact relevance analysis with better contact information
+
+### Using Google Contacts
+
+To use Google Contacts with the WhatsApp Unified Tool:
+
+1. Export your contacts from Google Contacts as a Google CSV file
+2. Use the `--google-contacts` or `-g` parameter in command-line mode:
+   ```bash
+   python whatsapp_unified_tool.py --file whatsapp_export/result.json --google-contacts path/to/google-contacts.csv
+   ```
+3. Or load the Google Contacts file in interactive mode using option 14 "Manage Google Contacts"
+
+For more details, see the [Google Contacts README](README_GOOGLE_CONTACTS.md).
+
 ## Tips for Effective Use
 
 1. **Start with Interactive Mode**: Get familiar with the tool's capabilities before using command-line options
@@ -228,6 +283,7 @@ Message clustering:
 3. **Combine Approaches**: Use basic search to find keywords, then semantic search for related concepts
 4. **Save Important Results**: Use the `--output` option to save analysis results for future reference
 5. **Install ML Dependencies**: For best performance with advanced features, install all ML dependencies
+6. **Import Google Contacts**: For better contact resolution, import your Google Contacts CSV export
 
 ## Troubleshooting
 
@@ -235,6 +291,8 @@ Message clustering:
 - **Memory Errors**: Reduce the number of messages analyzed by using more specific filters
 - **Missing ML Features**: Make sure you've installed the required ML dependencies
 - **Incorrect Contacts**: Ensure your contacts file is correctly formatted and up to date
+- **Google Contacts Issues**: Make sure you've exported contacts in "Google CSV" format (not vCard or Outlook CSV)
+- **Contact Matching Problems**: If contacts aren't matching, check the phone number formats in both WhatsApp and Google Contacts
 - **Installation Errors**: If you encounter errors installing ML dependencies, try installing them manually with pip
 
 ## Under the Hood

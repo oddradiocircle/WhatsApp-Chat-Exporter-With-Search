@@ -62,6 +62,13 @@ def print_results(results, show_context=True, contacts=None):
                 print(f"  - {keyword}: {count} veces")
         print("=" * 80 + "\n")
 
+    # Mostrar información sobre criterios de ordenación si están disponibles
+    if isinstance(results, dict) and 'sort_criteria' in results:
+        sort_criteria = results['sort_criteria']
+        if sort_criteria:
+            criteria_str = ', '.join(sort_criteria)
+            print(f"\nResultados ordenados por: {criteria_str}")
+
     print(f"\nSe encontraron {len(message_results)} mensajes coincidentes.")
 
     # Iniciar navegación interactiva
@@ -277,27 +284,169 @@ def save_results_to_file(results, filename, contacts=None):
         if filename.lower().endswith('.md'):
             with open(filename, 'w', encoding='utf-8') as f:
                 # Verificar si results es un diccionario con resultados
-                if isinstance(results, dict) and 'results' in results:
-                    message_results = results['results']
+                if isinstance(results, dict):
+                    # Manejar diferentes tipos de resultados
+                    if 'results' in results:
+                        message_results = results['results']
+                    elif 'contact_relevance' in results:
+                        # Escribir encabezado para relevancia de contactos
+                        f.write(f"# Análisis de Relevancia de Contactos\n\n")
+                        contact_dict = results['contact_relevance']
+
+                        f.write(f"Se encontraron {len(contact_dict)} contactos relevantes:\n\n")
+
+                        # Ordenar contactos por puntuación
+                        sorted_contacts = sorted(
+                            contact_dict.items(),
+                            key=lambda x: x[1].get('final_score', x[1].get('score', 0)),
+                            reverse=True
+                        )
+
+                        for i, (contact_id, data) in enumerate(sorted_contacts, 1):
+                            score = data.get('final_score', data.get('score', 0))
+                            f.write(f"## {i}. {data.get('display_name', 'Desconocido')} (Puntuación: {score:.1f})\n")
+                            f.write(f"**Teléfono:** {data.get('phone', 'Desconocido')}\n")
+                            f.write(f"**Mensajes coincidentes:** {data.get('message_count', 0)}\n")
+
+                            # Escribir métricas adicionales si están disponibles
+                            if 'keyword_density' in data:
+                                f.write(f"**Densidad de palabras clave:** {data['keyword_density']:.2%}\n")
+                            if 'keyword_diversity' in data:
+                                f.write(f"**Diversidad de palabras clave:** {data['keyword_diversity']:.2%}\n")
+                            if 'recency_factor' in data:
+                                f.write(f"**Factor de recencia:** {data['recency_factor']:.2f}\n")
+
+                            # Escribir palabras clave más frecuentes
+                            if 'keyword_counts' in data and data['keyword_counts']:
+                                f.write("**Palabras clave más frecuentes:**\n")
+                                sorted_keywords = sorted(data['keyword_counts'].items(), key=lambda x: x[1], reverse=True)
+                                for keyword, count in sorted_keywords[:5]:
+                                    f.write(f"- {keyword}: {count} veces\n")
+
+                            f.write("\n")
+
+                        # Terminar aquí para evitar procesar como mensajes
+                        print(f"Resultados guardados en {filename}")
+                        return True
+                    elif 'chat_relevance' in results:
+                        # Escribir encabezado para relevancia de chats
+                        f.write(f"# Análisis de Relevancia de Chats\n\n")
+                        chat_dict = results['chat_relevance']
+
+                        f.write(f"Se encontraron {len(chat_dict)} chats relevantes:\n\n")
+
+                        # Ordenar chats por puntuación
+                        sorted_chats = sorted(
+                            chat_dict.items(),
+                            key=lambda x: x[1].get('final_score', x[1].get('score', 0)),
+                            reverse=True
+                        )
+
+                        for i, (chat_id, data) in enumerate(sorted_chats, 1):
+                            score = data.get('final_score', data.get('score', 0))
+                            f.write(f"## {i}. {data.get('display_name', 'Desconocido')} (Puntuación: {score:.1f})\n")
+                            f.write(f"**Mensajes coincidentes:** {data.get('message_count', 0)}\n")
+
+                            # Escribir métricas adicionales si están disponibles
+                            if 'keyword_density' in data:
+                                f.write(f"**Densidad de palabras clave:** {data['keyword_density']:.2%}\n")
+                            if 'keyword_diversity' in data:
+                                f.write(f"**Diversidad de palabras clave:** {data['keyword_diversity']:.2%}\n")
+                            if 'recency_factor' in data:
+                                f.write(f"**Factor de recencia:** {data['recency_factor']:.2f}\n")
+
+                            # Escribir palabras clave más frecuentes
+                            if 'keyword_counts' in data and data['keyword_counts']:
+                                f.write("**Palabras clave más frecuentes:**\n")
+                                sorted_keywords = sorted(data['keyword_counts'].items(), key=lambda x: x[1], reverse=True)
+                                for keyword, count in sorted_keywords[:5]:
+                                    f.write(f"- {keyword}: {count} veces\n")
+
+                            f.write("\n")
+
+                        # Terminar aquí para evitar procesar como mensajes
+                        print(f"Resultados guardados en {filename}")
+                        return True
+                    elif 'prospects' in results:
+                        # Escribir encabezado para prospectos de ventas
+                        f.write(f"# Análisis de Prospectos de Ventas\n\n")
+                        prospects_dict = results['prospects']
+
+                        f.write(f"Se encontraron {len(prospects_dict)} prospectos potenciales:\n\n")
+
+                        # Ordenar prospectos por puntuación de potencial
+                        sorted_prospects = sorted(
+                            prospects_dict.items(),
+                            key=lambda x: x[1].get('potential_score', 0),
+                            reverse=True
+                        )
+
+                        for i, (contact_id, data) in enumerate(sorted_prospects, 1):
+                            f.write(f"## {i}. {data.get('display_name', 'Desconocido')} ({data.get('phone', 'Desconocido')})\n")
+                            f.write(f"**Potencial de compra:** {data.get('potential_level', 'Desconocido')} ({data.get('potential_score', 0):.1f}/100)\n")
+                            f.write(f"**Mensajes relevantes:** {data.get('message_count', 0)}\n")
+                            f.write(f"**Densidad de palabras clave:** {data.get('keyword_density', 0):.2%}\n")
+
+                            # Escribir interés por categorías
+                            if 'categories' in data and data['categories']:
+                                f.write("**Interés por categorías:**\n")
+                                sorted_categories = sorted(
+                                    data['categories'].items(),
+                                    key=lambda x: x[1].get('score', 0),
+                                    reverse=True
+                                )
+                                for category_name, category_data in sorted_categories:
+                                    f.write(f"- {category_name}: {category_data.get('score', 0):.1f} puntos ({category_data.get('message_count', 0)} mensajes)\n")
+
+                            f.write("\n")
+
+                        # Escribir información de categorías
+                        if 'categories' in results:
+                            f.write("## Categorías analizadas\n\n")
+                            for category_name, keywords in results['categories'].items():
+                                f.write(f"**{category_name}:** {', '.join(keywords)}\n")
+
+                        # Escribir información de filtros
+                        if 'filters' in results:
+                            f.write("\n## Filtros aplicados\n\n")
+                            filters = results['filters']
+                            if 'start_date' in filters and filters['start_date']:
+                                f.write(f"**Fecha de inicio:** {filters['start_date']}\n")
+                            if 'end_date' in filters and filters['end_date']:
+                                f.write(f"**Fecha de fin:** {filters['end_date']}\n")
+                            if 'min_score' in filters:
+                                f.write(f"**Puntuación mínima:** {filters['min_score']}\n")
+
+                        # Escribir fecha de análisis
+                        if 'analysis_date' in results:
+                            f.write(f"\n**Fecha de análisis:** {results['analysis_date']}\n")
+
+                        # Terminar aquí para evitar procesar como mensajes
+                        print(f"Resultados guardados en {filename}")
+                        return True
+                    else:
+                        # Si no es ninguno de los tipos especiales, tratar como mensajes
+                        message_results = results
                 else:
+                    # Si no es un diccionario, asumir que es una lista de mensajes
                     message_results = results
 
-                # Escribir encabezado
+                # Escribir encabezado para mensajes
                 f.write(f"# Resultados de búsqueda\n\n")
 
-                # Escribir resultados de mensajes
-                if message_results:
+                # Verificar si message_results es una lista
+                if isinstance(message_results, list):
                     f.write(f"Se encontraron {len(message_results)} mensajes coincidentes:\n\n")
 
                     for i, result in enumerate(message_results, 1):
                         f.write(f"## Resultado {i}" + (f" (Puntuación: {result.get('score', 0):.1f})" if 'score' in result else "") + "\n")
-                        f.write(f"**Chat:** {result['chat_name']}\n")
+                        f.write(f"**Chat:** {result.get('chat_name', 'Desconocido')}\n")
 
                         # Escribir información del remitente
                         if result.get('from_me'):
                             f.write(f"**Remitente:** Yo\n")
                         else:
-                            sender_info = result['sender']
+                            sender_info = result.get('sender', 'Desconocido')
                             phone_info = result.get('phone', 'Desconocido')
 
                             if sender_info == phone_info or sender_info == result.get('sender_id', ''):
@@ -307,7 +456,7 @@ def save_results_to_file(results, filename, contacts=None):
                                 if phone_info != "Desconocido":
                                     f.write(f"**Teléfono:** {phone_info}\n")
 
-                        f.write(f"**Fecha:** {result['date']}\n")
+                        f.write(f"**Fecha:** {result.get('date', 'Desconocida')}\n")
 
                         if 'matched_keywords' in result:
                             f.write(f"**Palabras clave coincidentes:** {', '.join(result['matched_keywords'])}\n")
@@ -315,7 +464,7 @@ def save_results_to_file(results, filename, contacts=None):
                         # Incluir estadísticas de palabras si están disponibles
                         if 'word_stats' in result:
                             stats = result['word_stats']
-                            f.write(f"**Densidad de palabras clave:** {stats['keyword_density']:.2%} ({stats['total_keywords']} de {stats['total_words']} palabras)\n")
+                            f.write(f"**Densidad de palabras clave:** {stats.get('keyword_density', 0):.2%} ({stats.get('total_keywords', 0)} de {stats.get('total_words', 0)} palabras)\n")
 
                             # Incluir factores adicionales si están disponibles
                             additional_factors = []
@@ -332,13 +481,10 @@ def save_results_to_file(results, filename, contacts=None):
                             if additional_factors:
                                 f.write(f"**Factores adicionales:** {' | '.join(additional_factors)}\n")
 
-                        f.write(f"**Mensaje:** {result['message']}\n\n")
-
-                # No incluir relevancia de contactos en los archivos guardados
-                # Esto se ha eliminado para mantener la salida limpia y enfocada solo en los mensajes
-
-                # No incluir relevancia de chats en los archivos guardados
-                # Esto se ha eliminado para mantener la salida limpia y enfocada solo en los mensajes
+                        f.write(f"**Mensaje:** {result.get('message', '')}\n\n")
+                else:
+                    # Si no es una lista, escribir un mensaje de error
+                    f.write("Error: No se pudieron procesar los resultados en formato adecuado.\n")
         else:
             # Guardar como JSON
             with open(filename, 'w', encoding='utf-8') as f:
@@ -348,4 +494,6 @@ def save_results_to_file(results, filename, contacts=None):
         return True
     except Exception as e:
         print(f"Error al guardar resultados: {e}")
+        import traceback
+        traceback.print_exc()
         return False
