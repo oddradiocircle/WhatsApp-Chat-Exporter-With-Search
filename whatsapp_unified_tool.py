@@ -165,8 +165,32 @@ class WhatsAppUnifiedTool:
 
     def search(self, keywords=None, min_score=10, max_results=20, start_date=None,
               end_date=None, chat_filter=None, sender_filter=None, phone_filter=None,
-              calculate_contact_relevance=False, preprocess_data=True):
-        """Search through messages using keywords and filters"""
+              calculate_contact_relevance=False, preprocess_data=True, use_cache=True):
+        """
+        Search through messages using keywords and filters.
+        Optimized for performance with large datasets.
+
+        Parameters:
+        - keywords: List of keywords or comma-separated string
+        - min_score: Minimum relevance score (0-100)
+        - max_results: Maximum number of results to return
+        - start_date: Start date filter (YYYY-MM-DD)
+        - end_date: End date filter (YYYY-MM-DD)
+        - chat_filter: Filter by chat name
+        - sender_filter: Filter by sender name
+        - phone_filter: Filter by phone number
+        - calculate_contact_relevance: Whether to calculate contact and chat relevance
+        - preprocess_data: Whether to preprocess data for better search results
+        - use_cache: Whether to use cached results for faster repeated searches
+
+        Returns:
+        - List of matching messages or dictionary with results and relevance information
+        """
+        import hashlib
+        import os
+        import pickle
+        import time
+
         if not self.data:
             print("No data loaded. Please load data first.")
             return []
@@ -181,6 +205,32 @@ class WhatsAppUnifiedTool:
 
         print(f"Searching for keywords: {', '.join(keywords)}")
 
+        # Create a cache key based on search parameters
+        cache_key = hashlib.md5(
+            f"{str(keywords)}_{min_score}_{max_results}_{start_date}_{end_date}_"
+            f"{chat_filter}_{sender_filter}_{phone_filter}_{calculate_contact_relevance}".encode()
+        ).hexdigest()
+
+        cache_file = os.path.join("search_cache", f"search_{cache_key}.pkl")
+
+        # Check if we can use cached results
+        if use_cache and os.path.exists(cache_file):
+            try:
+                print("Loading results from cache...")
+                with open(cache_file, 'rb') as f:
+                    cached_data = pickle.load(f)
+                    # Verify cache is still valid (data hasn't changed)
+                    if cached_data.get('data_hash') == hashlib.md5(str(self.data).encode()).hexdigest():
+                        print("Cache hit! Using cached results.")
+                        return cached_data.get('results')
+                    else:
+                        print("Cache invalid (data changed). Performing new search...")
+            except Exception as e:
+                print(f"Error loading cache: {e}. Performing new search...")
+
+        # Ensure cache directory exists
+        os.makedirs("search_cache", exist_ok=True)
+
         # Preprocesar datos para mejorar la búsqueda si se solicita
         search_data = self.data
         if preprocess_data:
@@ -190,6 +240,7 @@ class WhatsAppUnifiedTool:
             print("Preprocesamiento completado.")
 
         # Extract messages based on filters
+        start_time = time.time()
         all_messages = extract_messages(
             search_data,
             contacts=self.contacts,
@@ -199,6 +250,8 @@ class WhatsAppUnifiedTool:
             sender_filter=sender_filter,
             phone_filter=phone_filter
         )
+        extract_time = time.time() - start_time
+        print(f"Message extraction completed in {extract_time:.2f} seconds.")
 
         if not all_messages:
             print("No messages found with the specified filters.")
@@ -211,112 +264,140 @@ class WhatsAppUnifiedTool:
         contact_relevance = {}
         chat_relevance = {}
 
-        # Process each message
-        for msg in tqdm(all_messages, desc="Searching"):
-            # Calculate relevance score with the updated function
-            score, matched_keywords, keyword_counts, word_stats = calculate_relevance_score(msg['message'], keywords)
+        # Process messages in batches for better performance
+        batch_size = 100  # Process 100 messages at a time
+        total_batches = (len(all_messages) + batch_size - 1) // batch_size
 
-            # Skip if score is below threshold
-            if score < min_score or not matched_keywords:
-                continue
+        start_time = time.time()
 
-            # Get message context
-            context = get_message_context(self.data, msg['chat_id'], msg['msg_id'],
-                                         contacts=self.contacts)
+        # Process each message in batches
+        for batch_idx in tqdm(range(total_batches), desc="Processing batches"):
+            batch_start = batch_idx * batch_size
+            batch_end = min(batch_start + batch_size, len(all_messages))
+            batch = all_messages[batch_start:batch_end]
 
-            # Add to results
-            results.append({
-                **msg,
-                'score': score,
-                'matched_keywords': matched_keywords,
-                'word_stats': word_stats,
-                'context': context
-            })
+            batch_results = []
 
-            # Actualizar relevancia de contactos si se solicita
-            if calculate_contact_relevance:
-                # Obtener información del remitente
-                sender_id = msg.get('sender_id', '')
-                chat_id = msg.get('chat_id', '')
+            # Process each message in the current batch
+            for msg in batch:
+                # Calculate relevance score with the updated function
+                score, matched_keywords, keyword_counts, word_stats = calculate_relevance_score(msg['message'], keywords)
 
-                # Actualizar relevancia del contacto
-                if sender_id:
-                    # Extraer número de teléfono del sender_id (eliminar @s.whatsapp.net)
-                    phone_raw = sender_id.split('@')[0] if '@' in sender_id else sender_id
+                # Skip if score is below threshold
+                if score < min_score or not matched_keywords:
+                    continue
 
-                    if sender_id not in contact_relevance:
-                        contact_relevance[sender_id] = {
-                            'score': 0,
-                            'message_count': 0,
-                            'keyword_counts': {},
-                            'total_words': 0,
-                            'total_keywords': 0,
-                            'display_name': msg.get('sender', sender_id),
-                            'phone': phone_raw
-                        }
+                # Add to batch results without context (will add context later for top results only)
+                batch_results.append({
+                    **msg,
+                    'score': score,
+                    'matched_keywords': matched_keywords,
+                    'word_stats': word_stats,
+                    'keyword_counts': keyword_counts,  # Store for later use
+                    'context': None  # Will be populated later for top results
+                })
 
-                    # Actualizar puntuación y conteo
-                    contact_relevance[sender_id]['score'] += score
-                    contact_relevance[sender_id]['message_count'] += 1
+                # Actualizar relevancia de contactos si se solicita
+                if calculate_contact_relevance:
+                    # Obtener información del remitente
+                    sender_id = msg.get('sender_id', '')
+                    chat_id = msg.get('chat_id', '')
 
-                    # Actualizar estadísticas de palabras
-                    contact_relevance[sender_id]['total_words'] += word_stats['total_words']
-                    contact_relevance[sender_id]['total_keywords'] += word_stats['total_keywords']
+                    # Actualizar relevancia del contacto
+                    if sender_id:
+                        # Extraer número de teléfono del sender_id (eliminar @s.whatsapp.net)
+                        phone_raw = sender_id.split('@')[0] if '@' in sender_id else sender_id
 
-                    # Actualizar conteo de palabras clave
-                    for keyword, count in keyword_counts.items():
-                        if keyword not in contact_relevance[sender_id]['keyword_counts']:
-                            contact_relevance[sender_id]['keyword_counts'][keyword] = 0
-                        contact_relevance[sender_id]['keyword_counts'][keyword] += count
+                        if sender_id not in contact_relevance:
+                            contact_relevance[sender_id] = {
+                                'score': 0,
+                                'message_count': 0,
+                                'keyword_counts': {},
+                                'total_words': 0,
+                                'total_keywords': 0,
+                                'display_name': msg.get('sender', sender_id),
+                                'phone': phone_raw
+                            }
 
-                # Actualizar relevancia del chat
-                if chat_id:
-                    if chat_id not in chat_relevance:
-                        # Obtener nombre del chat
-                        chat_name = chat_id
-                        if self.contacts:
-                            # Extraer número de teléfono del chat_id
-                            chat_phone = chat_id.split('@')[0] if '@' in chat_id else chat_id
-                            if chat_phone in self.contacts:
-                                contact = self.contacts[chat_phone]
-                                if contact.get('display_name'):
-                                    chat_name = contact.get('display_name')
+                        # Actualizar puntuación y conteo
+                        contact_relevance[sender_id]['score'] += score
+                        contact_relevance[sender_id]['message_count'] += 1
 
-                        chat_relevance[chat_id] = {
-                            'score': 0,
-                            'message_count': 0,
-                            'keyword_counts': {},
-                            'total_words': 0,
-                            'total_keywords': 0,
-                            'display_name': chat_name,
-                            'phone': chat_phone if '@' in chat_id else chat_id
-                        }
+                        # Actualizar estadísticas de palabras
+                        contact_relevance[sender_id]['total_words'] += word_stats['total_words']
+                        contact_relevance[sender_id]['total_keywords'] += word_stats['total_keywords']
 
-                    # Actualizar puntuación y conteo
-                    chat_relevance[chat_id]['score'] += score
-                    chat_relevance[chat_id]['message_count'] += 1
+                        # Actualizar conteo de palabras clave
+                        for keyword, count in keyword_counts.items():
+                            if keyword not in contact_relevance[sender_id]['keyword_counts']:
+                                contact_relevance[sender_id]['keyword_counts'][keyword] = 0
+                            contact_relevance[sender_id]['keyword_counts'][keyword] += count
 
-                    # Actualizar estadísticas de palabras
-                    chat_relevance[chat_id]['total_words'] += word_stats['total_words']
-                    chat_relevance[chat_id]['total_keywords'] += word_stats['total_keywords']
+                    # Actualizar relevancia del chat
+                    if chat_id:
+                        if chat_id not in chat_relevance:
+                            # Obtener nombre del chat
+                            chat_name = chat_id
+                            if self.contacts:
+                                # Extraer número de teléfono del chat_id
+                                chat_phone = chat_id.split('@')[0] if '@' in chat_id else chat_id
+                                if chat_phone in self.contacts:
+                                    contact = self.contacts[chat_phone]
+                                    if contact.get('display_name'):
+                                        chat_name = contact.get('display_name')
 
-                    # Actualizar conteo de palabras clave
-                    for keyword, count in keyword_counts.items():
-                        if keyword not in chat_relevance[chat_id]['keyword_counts']:
-                            chat_relevance[chat_id]['keyword_counts'][keyword] = 0
-                        chat_relevance[chat_id]['keyword_counts'][keyword] += count
+                            chat_relevance[chat_id] = {
+                                'score': 0,
+                                'message_count': 0,
+                                'keyword_counts': {},
+                                'total_words': 0,
+                                'total_keywords': 0,
+                                'display_name': chat_name,
+                                'phone': chat_phone if '@' in chat_id else chat_id
+                            }
 
-            # Sort and trim results periodically
-            if len(results) % 100 == 0:
+                        # Actualizar puntuación y conteo
+                        chat_relevance[chat_id]['score'] += score
+                        chat_relevance[chat_id]['message_count'] += 1
+
+                        # Actualizar estadísticas de palabras
+                        chat_relevance[chat_id]['total_words'] += word_stats['total_words']
+                        chat_relevance[chat_id]['total_keywords'] += word_stats['total_keywords']
+
+                        # Actualizar conteo de palabras clave
+                        for keyword, count in keyword_counts.items():
+                            if keyword not in chat_relevance[chat_id]['keyword_counts']:
+                                chat_relevance[chat_id]['keyword_counts'][keyword] = 0
+                            chat_relevance[chat_id]['keyword_counts'][keyword] += count
+
+            # Add batch results to overall results
+            results.extend(batch_results)
+
+            # Sort and trim results after each batch
+            if results:
                 results.sort(key=lambda x: x['score'], reverse=True)
-                results = results[:max_results]
+                results = results[:max_results * 2]  # Keep twice as many as needed for now
 
         # Final sort and limit
         results.sort(key=lambda x: x['score'], reverse=True)
         results = results[:max_results]
 
+        # Now add context only for the top results
+        print("Retrieving context for top results...")
+        for i, result in enumerate(results):
+            # Get message context
+            context = get_message_context(self.data, result['chat_id'], result['msg_id'],
+                                         contacts=self.contacts)
+            results[i]['context'] = context
+
+        processing_time = time.time() - start_time
+        print(f"Message processing completed in {processing_time:.2f} seconds.")
+
         # Calcular puntuación final para contactos y chats
         if calculate_contact_relevance:
+            # Obtener la marca de tiempo actual para calcular la recencia
+            current_timestamp = datetime.now().timestamp()
+
             # Normalizar puntuaciones de contactos y calcular métricas adicionales
             for contact_id, data in contact_relevance.items():
                 if data['message_count'] > 0:
@@ -328,60 +409,154 @@ class WhatsAppUnifiedTool:
                     else:
                         data['keyword_density'] = 0
 
-                    # Calcular puntuación de relevancia ajustada por densidad
+                    # Calcular diversidad de palabras clave (proporción de palabras clave únicas vs total de palabras clave)
+                    unique_keywords = len(data['keyword_counts'])
+                    total_keywords = len(keywords)
+                    data['keyword_diversity'] = unique_keywords / total_keywords if total_keywords > 0 else 0
+
+                    # Calcular factor de recencia basado en las marcas de tiempo de los mensajes
+                    # Buscar los mensajes más recientes de este contacto
+                    contact_messages = [msg for msg in results if msg.get('sender_id') == contact_id]
+                    if contact_messages:
+                        # Ordenar por timestamp (más reciente primero)
+                        contact_messages.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
+                        # Tomar el mensaje más reciente
+                        latest_msg = contact_messages[0]
+                        latest_timestamp = latest_msg.get('timestamp', 0)
+
+                        # Calcular recencia (1.0 = muy reciente, 0.0 = muy antiguo)
+                        # Considerar mensajes de hasta 90 días (7776000 segundos)
+                        time_diff = current_timestamp - latest_timestamp
+                        recency_factor = max(0.0, 1.0 - (time_diff / 7776000))
+                        data['recency_factor'] = recency_factor
+                    else:
+                        data['recency_factor'] = 0.0
+
+                    # Calcular puntuación de relevancia ajustada por todos los factores
                     data['density_adjusted_score'] = data['score'] * (1 + data['keyword_density'])
+                    data['final_score'] = (
+                        data['density_adjusted_score'] * 0.6 +  # 60% - Puntuación ajustada por densidad
+                        data['keyword_diversity'] * 100 * 0.2 + # 20% - Diversidad de palabras clave
+                        data['recency_factor'] * 100 * 0.2      # 20% - Recencia
+                    )
                 else:
                     data['avg_score'] = 0
                     data['keyword_density'] = 0
+                    data['keyword_diversity'] = 0
+                    data['recency_factor'] = 0
                     data['density_adjusted_score'] = 0
+                    data['final_score'] = 0
 
             # Normalizar puntuaciones de chats y calcular métricas adicionales
             for chat_id, data in chat_relevance.items():
                 if data['message_count'] > 0:
                     data['avg_score'] = data['score'] / data['message_count']
 
-                    # Calcular densidad de palabras clave para el chat si hay datos disponibles
+                    # Calcular densidad de palabras clave para el chat
                     if 'total_words' in data and data['total_words'] > 0:
                         data['keyword_density'] = data['total_keywords'] / data['total_words']
                     else:
                         data['keyword_density'] = 0
 
-                    # Calcular puntuación ajustada por densidad si es posible
-                    if 'keyword_density' in data:
-                        data['density_adjusted_score'] = data['score'] * (1 + data['keyword_density'])
+                    # Calcular diversidad de palabras clave
+                    unique_keywords = len(data['keyword_counts'])
+                    total_keywords = len(keywords)
+                    data['keyword_diversity'] = unique_keywords / total_keywords if total_keywords > 0 else 0
+
+                    # Calcular factor de recencia
+                    chat_messages = [msg for msg in results if msg.get('chat_id') == chat_id]
+                    if chat_messages:
+                        # Ordenar por timestamp (más reciente primero)
+                        chat_messages.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
+                        # Tomar el mensaje más reciente
+                        latest_msg = chat_messages[0]
+                        latest_timestamp = latest_msg.get('timestamp', 0)
+
+                        # Calcular recencia
+                        time_diff = current_timestamp - latest_timestamp
+                        recency_factor = max(0.0, 1.0 - (time_diff / 7776000))
+                        data['recency_factor'] = recency_factor
+                    else:
+                        data['recency_factor'] = 0.0
+
+                    # Calcular puntuación ajustada por todos los factores
+                    data['density_adjusted_score'] = data['score'] * (1 + data['keyword_density'])
+                    data['final_score'] = (
+                        data['density_adjusted_score'] * 0.6 +  # 60% - Puntuación ajustada por densidad
+                        data['keyword_diversity'] * 100 * 0.2 + # 20% - Diversidad de palabras clave
+                        data['recency_factor'] * 100 * 0.2      # 20% - Recencia
+                    )
                 else:
                     data['avg_score'] = 0
                     data['keyword_density'] = 0
+                    data['keyword_diversity'] = 0
+                    data['recency_factor'] = 0
                     data['density_adjusted_score'] = 0
+                    data['final_score'] = 0
 
-            # Identificar el contacto con más coincidencias
+            # Identificar el contacto con más coincidencias usando la puntuación final
             most_relevant_contact = None
             if contact_relevance:
                 most_relevant_contact = max(
                     contact_relevance.items(),
-                    key=lambda x: x[1]['density_adjusted_score']
+                    key=lambda x: x[1]['final_score']
                 )
 
-            # Ordenar contactos por puntuación ajustada por densidad
+            # Ordenar contactos por puntuación final
             sorted_contacts = sorted(
                 contact_relevance.items(),
-                key=lambda x: x[1]['density_adjusted_score'],
+                key=lambda x: x[1]['final_score'],
                 reverse=True
             )
 
-            # Ordenar chats por puntuación ajustada por densidad si está disponible
+            # Ordenar chats por puntuación final
             sorted_chats = sorted(
                 chat_relevance.items(),
-                key=lambda x: x[1].get('density_adjusted_score', x[1]['score']),
+                key=lambda x: x[1]['final_score'],
                 reverse=True
             )
 
-            return {
+            # Prepare results
+            final_results = {
                 'results': results,
                 'contact_relevance': sorted_contacts,
                 'chat_relevance': sorted_chats,
                 'most_relevant_contact': most_relevant_contact
             }
+
+            # Save results to cache if caching is enabled
+            if use_cache:
+                try:
+                    # Create cache data with a hash of the current data for validation
+                    cache_data = {
+                        'results': final_results,
+                        'data_hash': hashlib.md5(str(self.data).encode()).hexdigest(),
+                        'timestamp': time.time()
+                    }
+
+                    with open(cache_file, 'wb') as f:
+                        pickle.dump(cache_data, f)
+                    print(f"Search results cached to {cache_file}")
+                except Exception as e:
+                    print(f"Warning: Could not cache results: {e}")
+
+            return final_results
+
+        # Save simple results to cache if caching is enabled
+        if use_cache:
+            try:
+                # Create cache data with a hash of the current data for validation
+                cache_data = {
+                    'results': results,
+                    'data_hash': hashlib.md5(str(self.data).encode()).hexdigest(),
+                    'timestamp': time.time()
+                }
+
+                with open(cache_file, 'wb') as f:
+                    pickle.dump(cache_data, f)
+                print(f"Search results cached to {cache_file}")
+            except Exception as e:
+                print(f"Warning: Could not cache results: {e}")
 
         return results
 

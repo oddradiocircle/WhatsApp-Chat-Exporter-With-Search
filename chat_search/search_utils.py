@@ -42,9 +42,17 @@ def print_results(results, show_context=True, contacts=None):
         contact_id, contact_data = most_relevant_contact
         print("\n" + "=" * 80)
         print(f"CONTACTO MÁS RELEVANTE: {contact_data['display_name']} ({contact_data['phone']})")
-        print(f"Puntuación total: {contact_data['score']:.1f}")
+        print(f"Puntuación total: {contact_data.get('final_score', contact_data['score']):.1f}")
         print(f"Mensajes coincidentes: {contact_data['message_count']}")
         print(f"Densidad de palabras clave: {contact_data['keyword_density']:.2%}")
+
+        # Mostrar diversidad de palabras clave si está disponible
+        if 'keyword_diversity' in contact_data:
+            print(f"Diversidad de palabras clave: {contact_data['keyword_diversity']:.2%}")
+
+        # Mostrar factor de recencia si está disponible
+        if 'recency_factor' in contact_data:
+            print(f"Factor de recencia: {contact_data['recency_factor']:.2f}")
 
         # Mostrar palabras clave más frecuentes para este contacto
         if contact_data['keyword_counts']:
@@ -114,6 +122,21 @@ def print_results(results, show_context=True, contacts=None):
             stats = result['word_stats']
             print(f"Densidad de palabras clave: {stats['keyword_density']:.2%} ({stats['total_keywords']} de {stats['total_words']} palabras)")
 
+            # Mostrar factores adicionales si están disponibles
+            additional_factors = []
+
+            if 'proximity_factor' in stats:
+                additional_factors.append(f"Proximidad: {stats['proximity_factor']:.2f}")
+
+            if 'position_factor' in stats:
+                additional_factors.append(f"Posición: {stats['position_factor']:.2f}")
+
+            if 'partial_matches' in stats and stats['partial_matches'] > 0:
+                additional_factors.append(f"Coincidencias parciales: {stats['partial_matches']}")
+
+            if additional_factors:
+                print(f"Factores adicionales: {' | '.join(additional_factors)}")
+
         print(f"\nMensaje: {result['message']}")
 
         if show_context and 'context' in result and result['context']:
@@ -157,7 +180,20 @@ def print_results(results, show_context=True, contacts=None):
 
             for i, (contact_id, data) in enumerate(contact_relevance[:10], 1):  # Mostrar los 10 más relevantes
                 print(f"{i}. {data['display_name']} ({data['phone']})")
-                print(f"   Puntuación: {data['score']:.1f} | Mensajes: {data['message_count']} | Densidad: {data.get('keyword_density', 0):.2%}")
+
+                # Usar puntuación final si está disponible, de lo contrario usar puntuación normal
+                score_display = data.get('final_score', data['score'])
+                print(f"   Puntuación: {score_display:.1f} | Mensajes: {data['message_count']} | Densidad: {data.get('keyword_density', 0):.2%}")
+
+                # Mostrar métricas adicionales si están disponibles
+                additional_metrics = []
+                if 'keyword_diversity' in data:
+                    additional_metrics.append(f"Diversidad: {data['keyword_diversity']:.2%}")
+                if 'recency_factor' in data:
+                    additional_metrics.append(f"Recencia: {data['recency_factor']:.2f}")
+
+                if additional_metrics:
+                    print(f"   {' | '.join(additional_metrics)}")
 
                 # Mostrar palabras clave más frecuentes
                 if data['keyword_counts']:
@@ -178,13 +214,41 @@ def print_results(results, show_context=True, contacts=None):
             if chat_relevance:
                 print("\nDistribución por chat:")
                 for i, (chat_id, data) in enumerate(chat_relevance[:5], 1):
-                    print(f"{i}. {data['display_name']}: {data['message_count']} mensajes")
+                    # Usar puntuación final si está disponible
+                    score_display = data.get('final_score', data['score'])
+                    print(f"{i}. {data['display_name']}: {data['message_count']} mensajes (Puntuación: {score_display:.1f})")
+
+                    # Mostrar métricas adicionales si están disponibles
+                    additional_metrics = []
+                    if 'keyword_density' in data:
+                        additional_metrics.append(f"Densidad: {data['keyword_density']:.2%}")
+                    if 'keyword_diversity' in data:
+                        additional_metrics.append(f"Diversidad: {data['keyword_diversity']:.2%}")
+                    if 'recency_factor' in data:
+                        additional_metrics.append(f"Recencia: {data['recency_factor']:.2f}")
+
+                    if additional_metrics:
+                        print(f"   {' | '.join(additional_metrics)}")
 
             # Mostrar distribución por contacto
             if contact_relevance:
                 print("\nDistribución por contacto:")
                 for i, (contact_id, data) in enumerate(contact_relevance[:5], 1):
-                    print(f"{i}. {data['display_name']}: {data['message_count']} mensajes")
+                    # Usar puntuación final si está disponible
+                    score_display = data.get('final_score', data['score'])
+                    print(f"{i}. {data['display_name']}: {data['message_count']} mensajes (Puntuación: {score_display:.1f})")
+
+                    # Mostrar métricas adicionales si están disponibles
+                    additional_metrics = []
+                    if 'keyword_density' in data:
+                        additional_metrics.append(f"Densidad: {data['keyword_density']:.2%}")
+                    if 'keyword_diversity' in data:
+                        additional_metrics.append(f"Diversidad: {data['keyword_diversity']:.2%}")
+                    if 'recency_factor' in data:
+                        additional_metrics.append(f"Recencia: {data['recency_factor']:.2f}")
+
+                    if additional_metrics:
+                        print(f"   {' | '.join(additional_metrics)}")
 
             input("\nPresiona Enter para continuar...")
         elif choice == 'q':
@@ -247,6 +311,26 @@ def save_results_to_file(results, filename, contacts=None):
 
                         if 'matched_keywords' in result:
                             f.write(f"**Palabras clave coincidentes:** {', '.join(result['matched_keywords'])}\n")
+
+                        # Incluir estadísticas de palabras si están disponibles
+                        if 'word_stats' in result:
+                            stats = result['word_stats']
+                            f.write(f"**Densidad de palabras clave:** {stats['keyword_density']:.2%} ({stats['total_keywords']} de {stats['total_words']} palabras)\n")
+
+                            # Incluir factores adicionales si están disponibles
+                            additional_factors = []
+
+                            if 'proximity_factor' in stats:
+                                additional_factors.append(f"Proximidad: {stats['proximity_factor']:.2f}")
+
+                            if 'position_factor' in stats:
+                                additional_factors.append(f"Posición: {stats['position_factor']:.2f}")
+
+                            if 'partial_matches' in stats and stats['partial_matches'] > 0:
+                                additional_factors.append(f"Coincidencias parciales: {stats['partial_matches']}")
+
+                            if additional_factors:
+                                f.write(f"**Factores adicionales:** {' | '.join(additional_factors)}\n")
 
                         f.write(f"**Mensaje:** {result['message']}\n\n")
 

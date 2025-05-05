@@ -12,6 +12,8 @@ from datetime import datetime
 def calculate_relevance_score(message, keywords):
     """
     Calcula una puntuación de relevancia para un mensaje basado en palabras clave.
+    Versión mejorada con soporte para coincidencias parciales, proximidad de palabras clave,
+    y posición de palabras clave en el mensaje.
 
     Parámetros:
     - message: Contenido del mensaje
@@ -28,8 +30,10 @@ def calculate_relevance_score(message, keywords):
 
     message_lower = message.lower()
     matched_keywords = []
+    partial_matches = []
+    keyword_positions = {}
 
-    # Contar ocurrencias de cada palabra clave (solo palabras completas)
+    # Contar ocurrencias de cada palabra clave (palabras completas y coincidencias parciales)
     keyword_counts = {}
     for keyword in keywords:
         if not keyword.strip():  # Ignorar palabras clave vacías
@@ -39,14 +43,42 @@ def calculate_relevance_score(message, keywords):
         if not keyword_lower:  # Ignorar después de strip si está vacío
             continue
 
-        # Buscar palabras completas usando expresiones regulares
+        # 1. Buscar palabras completas usando expresiones regulares
         pattern = r'\b' + re.escape(keyword_lower) + r'\b'
         matches = re.findall(pattern, message_lower)
         count = len(matches)
 
+        # 2. Encontrar posiciones de las palabras clave para análisis de proximidad
+        positions = []
+        for match in re.finditer(pattern, message_lower):
+            positions.append(match.start())
+
+        if positions:
+            keyword_positions[keyword_lower] = positions
+
+        # 3. Buscar coincidencias parciales si no hay coincidencias exactas
+        if count == 0 and len(keyword_lower) > 4:  # Solo para palabras clave más largas
+            # Buscar coincidencias parciales (al menos 70% de la palabra)
+            min_match_length = max(4, int(len(keyword_lower) * 0.7))
+            for i in range(len(keyword_lower) - min_match_length + 1):
+                partial = keyword_lower[i:i+min_match_length]
+                if partial in message_lower:
+                    partial_matches.append(keyword)
+                    # Dar menos peso a las coincidencias parciales (50%)
+                    if keyword not in keyword_counts:
+                        keyword_counts[keyword] = 0.5
+                    else:
+                        keyword_counts[keyword] += 0.5
+                    break
+
         if count > 0:
             keyword_counts[keyword] = count
             matched_keywords.append(keyword)
+
+    # Añadir coincidencias parciales a la lista de palabras clave coincidentes
+    for partial in partial_matches:
+        if partial not in matched_keywords:
+            matched_keywords.append(partial)
 
     # Si no hay coincidencias, devolver 0
     if not keyword_counts:
@@ -70,20 +102,72 @@ def calculate_relevance_score(message, keywords):
     # Ajustar por densidad de palabras clave (mensajes con mayor proporción de palabras clave son más relevantes)
     density_score = min(100, keyword_density * 100)
 
+    # 4. Calcular factor de proximidad (palabras clave cercanas entre sí son más relevantes)
+    proximity_factor = 1.0
+    if len(keyword_positions) > 1:
+        # Calcular la distancia mínima entre palabras clave diferentes
+        min_distances = []
+        keywords_list = list(keyword_positions.keys())
+
+        for i in range(len(keywords_list)):
+            for j in range(i+1, len(keywords_list)):
+                key1, key2 = keywords_list[i], keywords_list[j]
+                for pos1 in keyword_positions[key1]:
+                    for pos2 in keyword_positions[key2]:
+                        distance = abs(pos1 - pos2)
+                        # Normalizar distancia: más cercano = mejor puntuación
+                        # Considerar distancias de hasta 50 caracteres
+                        if distance < 50:
+                            min_distances.append(1.0 - (distance / 50.0))
+
+        if min_distances:
+            # Promedio de las mejores 3 proximidades o todas si hay menos
+            top_proximities = sorted(min_distances, reverse=True)[:min(3, len(min_distances))]
+            proximity_factor = 1.0 + (sum(top_proximities) / len(top_proximities)) * 0.5  # Hasta 50% de bonificación
+
+    # 5. Calcular factor de posición (palabras clave al principio del mensaje son más relevantes)
+    position_factor = 1.0
+    if keyword_positions:
+        # Encontrar la posición de la primera palabra clave
+        first_positions = []
+        for positions in keyword_positions.values():
+            if positions:
+                first_positions.append(min(positions))
+
+        if first_positions:
+            first_keyword_pos = min(first_positions)
+            # Si la primera palabra clave está en el primer 20% del mensaje, dar bonificación
+            if total_words > 0:
+                relative_position = first_keyword_pos / len(message_lower)
+                if relative_position < 0.2:
+                    position_factor = 1.0 + (1.0 - (relative_position / 0.2)) * 0.3  # Hasta 30% de bonificación
+
     # Ajustar por longitud del mensaje (mensajes más cortos con palabras clave son más relevantes)
     length_factor = 1.0
     if len(message) > 0:
         length_factor = min(1.0, 50 / len(message))
 
-    # Calcular puntuación final con el nuevo factor de densidad
-    final_score = (base_score * 0.4 + frequency_score * 0.3 + density_score * 0.2) * (0.7 + length_factor * 0.3)
+    # Calcular puntuación final con todos los factores
+    final_score = (
+        base_score * 0.35 +          # 35% - Diversidad de palabras clave
+        frequency_score * 0.25 +     # 25% - Frecuencia de palabras clave
+        density_score * 0.2          # 20% - Densidad de palabras clave
+    ) * (
+        0.7 +                        # Base
+        length_factor * 0.1 +        # 10% - Factor de longitud
+        proximity_factor * 0.1 +     # 10% - Factor de proximidad
+        position_factor * 0.1        # 10% - Factor de posición
+    )
 
     # Estadísticas adicionales para análisis de relevancia
     word_stats = {
         'total_words': total_words,
         'total_keywords': total_keywords,
         'keyword_density': keyword_density,
-        'unique_keywords': len(keyword_counts)
+        'unique_keywords': len(keyword_counts),
+        'proximity_factor': proximity_factor,
+        'position_factor': position_factor,
+        'partial_matches': len(partial_matches)
     }
 
     return min(100, final_score), matched_keywords, keyword_counts, word_stats
